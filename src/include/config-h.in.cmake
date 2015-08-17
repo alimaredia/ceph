@@ -288,4 +288,7 @@
 /* Define if you have spdk */
 #cmakedefine HAVE_SPDK 1
 
+/* Defined if blkin enabled */
+#cmakedefine WITH_BLKIN
+
 #endif /* CONFIG_H */
