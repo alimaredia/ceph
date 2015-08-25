@@ -176,6 +176,8 @@ public:
     } else {
       pg_trim_rollback_to = pg_trim_to;
     }
+    if (header.version >= 12)
+      decode_trace(p);
   }
 
   void finish_decode() { }
@@ -235,6 +237,7 @@ public:
     ::encode(pgid.shard, payload);
     ::encode(updated_hit_set_history, payload);
     ::encode(pg_trim_rollback_to, payload);
+    encode_trace(payload, features);
   }
 
   MOSDSubOp()

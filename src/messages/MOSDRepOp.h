@@ -25,7 +25,7 @@
 
 class MOSDRepOp : public Message {
 
-  static const int HEAD_VERSION = 1;
+  static const int HEAD_VERSION = 2;
   static const int COMPAT_VERSION = 1;
 
 public:
@@ -95,6 +95,7 @@ public:
     ::decode(updated_hit_set_history, p);
     ::decode(pg_trim_rollback_to, p);
     final_decode_needed = false;
+    decode_trace(p);
   }
 
   virtual void encode_payload(uint64_t features) {
@@ -113,6 +114,9 @@ public:
     ::encode(from, payload);
     ::encode(updated_hit_set_history, payload);
     ::encode(pg_trim_rollback_to, payload);
+
+    if (header.version >= 2)
+      encode_trace(payload, features);
   }
 
   MOSDRepOp()

@@ -203,6 +203,7 @@ public:
           ::encode(redirect, payload);
         }
       }
+      encode_trace(payload, features);
     }
   }
   virtual void decode_payload() {
@@ -288,6 +289,7 @@ public:
         do_redirect = !redirect.empty();
       }
       if (header.version >= 7) {
+        decode_trace(p);
         ::decode(do_redirect, p);
         if (do_redirect) {
 	  ::decode(redirect, p);
