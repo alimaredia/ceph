@@ -897,6 +897,7 @@ OPTION(osd_bench_small_size_max_iops, OPT_U32, 100) // 100 IOPS
 OPTION(osd_bench_large_size_max_throughput, OPT_U64, 100 << 20) // 100 MB/s
 OPTION(osd_bench_max_block_size, OPT_U64, 64 << 20) // cap the block size at 64MB
 OPTION(osd_bench_duration, OPT_U32, 30) // duration of 'osd bench', capped at 30s to avoid triggering timeouts
+OPTION(osd_blkin_trace_all, OPT_BOOL, false) // create a blkin trace for all requests
 
 OPTION(osd_discard_disconnected_ops, OPT_BOOL, true)
 
