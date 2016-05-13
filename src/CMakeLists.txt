@@ -1118,6 +1118,7 @@ if(${WITH_RBD})
   install(TARGETS rbd DESTINATION bin)
   install(PROGRAMS ${CMAKE_SOURCE_DIR}/src/ceph-rbdnamer DESTINATION bin)
   install(PROGRAMS ${CMAKE_SOURCE_DIR}/src/rbdmap DESTINATION bin)
+
   add_subdirectory(rbd_replay)
 endif(${WITH_RBD})
 
