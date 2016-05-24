@@ -43,7 +43,7 @@ private:
   list <Dispatcher*> fast_dispatchers;
   ZTracer::Endpoint trace_endpoint;
 
-  void set_endpoint_addr(const sockaddr_storage& ss, int port,
+  void set_endpoint_addr(const entity_addr_t& a,
                          const entity_name_t &name);
 
 protected:
@@ -211,7 +211,7 @@ protected:
    */
   virtual void set_myaddr(const entity_addr_t& a) {
     my_inst.addr = a;
-    set_endpoint_addr(a.addr, a.get_port(), my_inst.name);
+    set_endpoint_addr(a, my_inst.name);
   }
 public:
   /**

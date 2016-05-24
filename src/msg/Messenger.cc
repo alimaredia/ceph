@@ -44,20 +44,20 @@ Messenger *Messenger::create(CephContext *cct, const string &type,
   return nullptr;
 }
 
-void Messenger::set_endpoint_addr(const sockaddr_storage &ss, int port,
+void Messenger::set_endpoint_addr(const entity_addr_t& a, 
                                   const entity_name_t &name)
 {
   size_t hostlen;
-  if (ss.ss_family == AF_INET)
+  if (a.get_family() == AF_INET)
     hostlen = sizeof(struct sockaddr_in);
-  else if (ss.ss_family == AF_INET6)
+  else if (a.get_family() == AF_INET6)
     hostlen = sizeof(struct sockaddr_in6);
   else
     hostlen = 0;
 
   if (hostlen) {
     char buf[NI_MAXHOST] = { 0 };
-    getnameinfo((struct sockaddr *)&ss, hostlen, buf, sizeof(buf),
+    getnameinfo(a.get_sockaddr(), hostlen, buf, sizeof(buf),
                 NULL, 0, NI_NUMERICHOST);
 
     trace_endpoint.copy_ip(buf);
