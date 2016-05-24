@@ -892,7 +892,7 @@ void ECBackend::handle_sub_write(
 	get_parent()->get_info().last_complete, trace)));
   localt.register_on_applied(
     get_parent()->bless_context(
-      new SubWriteApplied(this, msg, op.tid, op.at_version)));
+      new SubWriteApplied(this, msg, op.tid, op.at_version, trace)));
   vector<ObjectStore::Transaction> tls;
   tls.reserve(2);
   tls.push_back(std::move(localt));
