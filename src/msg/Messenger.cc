@@ -62,7 +62,7 @@ void Messenger::set_endpoint_addr(const entity_addr_t& a,
 
     trace_endpoint.copy_ip(buf);
   }
-  trace_endpoint.set_port(port);
+  trace_endpoint.set_port(a.get_port());
 }
 
 /*
