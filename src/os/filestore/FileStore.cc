@@ -2171,12 +2171,8 @@ int FileStore::queue_transactions(Sequencer *posr, vector<Transaction>& tls,
   int r = do_transactions(tls, op);
 
   if (r >= 0) {
-<<<<<<< 22d1ff7fb6fea4e6add63f12545794f84488f002:src/os/filestore/FileStore.cc
-    _op_journal_transactions(tbl, orig_len, op, ondisk, osd_op);
-=======
     trace.event("journal started");
-    _op_journal_transactions(tbl, data_align, op, ondisk, osd_op);
->>>>>>> blkin: add traces to FileStore/Journal:src/os/FileStore.cc
+    _op_journal_transactions(tbl, orig_len, op, ondisk, osd_op);
   } else {
     delete ondisk;
   }

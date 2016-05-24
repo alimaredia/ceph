@@ -1052,7 +1052,7 @@ int FileJournal::prepare_single_write(write_item &next_write, bufferlist& bl, of
   footerptr.copy_in(post_offset + magic2_offset, sizeof(uint64_t), (char *)&magic2);
 
   bl.claim_append(ebl);
-  if (next_write.tracked_op)
+  if (next_write.tracked_op) {
     next_write.tracked_op->mark_event("write_thread_in_journal_buffer");
     next_write.tracked_op->journal_trace.event("prepare_single_write");
   }
