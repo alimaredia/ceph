@@ -28,7 +28,6 @@
 #include "include/types.h"
 #include "msg/MessageRef.h"
 
-
 // ======================================================
 
 // abstract Connection, for keeping per-connection state

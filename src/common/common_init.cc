@@ -107,6 +107,7 @@ void common_init_finish(CephContext *cct)
   }
   cct->_finished = true;
   cct->init_crypto();
+  ZTracer::jtrace_init();
   ZTracer::ztrace_init();
 
   int flags = cct->get_init_flags();

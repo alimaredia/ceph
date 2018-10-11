@@ -8,7 +8,10 @@
 
 #ifdef WITH_BLKIN
 
-#include <ztracer.hpp>
+#define SIGNED_RIGHT_SHIFT_IS 1
+#define ARITHMETIC_RIGHT_SHIFT 1
+
+#include <blkin/blkin-lib/jtracer.hpp>
 
 #else // !WITH_BLKIN
 
