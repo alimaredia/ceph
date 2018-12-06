@@ -3,5 +3,5 @@ os_type: ubuntu
 tasks:
 - s3tests:
     client.0:
-      force-branch: ceph-master
+      force-branch: wip-list-objects-v2
       rgw_server: client.0
