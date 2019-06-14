@@ -603,7 +603,7 @@ public:
 
 int cls_rgw_get_dir_header_async(IoCtx& io_ctx, string& oid, RGWGetDirHeader_CB *ctx)
 {
-  bufferlist in, out;
+  bufferlist in;
   rgw_cls_list_op call;
   call.num_entries = 0;
   encode(call, in);
@@ -619,15 +619,44 @@ int cls_rgw_get_dir_header_async(IoCtx& io_ctx, string& oid, RGWGetDirHeader_CB 
   return 0;
 }
 
-int cls_rgw_usage_log_read(IoCtx& io_ctx, const string& oid, const string& user, const string& bucket,
+class UsageLogReadCompletion : public ObjectOperationCompletion {
+  string *read_iter;
+  map<rgw_user_bucket, rgw_usage_log_entry> *usage;
+  bool *is_truncated;
+  int *ret_code;
+
+public:
+  UsageLogReadCompletion(string *_read_iter, map<rgw_user_bucket, rgw_usage_log_entry> *_usage,
+                                  bool *_is_truncated, int *_ret_code) : 
+                                  read_iter(_read_iter), usage(_usage), is_truncated(_is_truncated),
+                                  ret_code(_ret_code) {}
+  void handle_completion(int r, bufferlist& outbl) override {
+    try {
+      rgw_cls_usage_log_read_ret result;
+      auto iter = outbl.cbegin();
+      decode(result, iter);
+      *read_iter = result.next_iter;
+      if (is_truncated)
+        *is_truncated = result.truncated;
+
+      *usage = result.usage;
+    } catch (buffer::error& e) {
+      r = -EINVAL;
+    }
+    *ret_code = r;
+
+  }
+};
+
+void cls_rgw_usage_log_read(librados::ObjectReadOperation& op, const string& user, const string& bucket,
                            uint64_t start_epoch, uint64_t end_epoch, uint32_t max_entries,
                            string& read_iter, map<rgw_user_bucket, rgw_usage_log_entry>& usage,
-                           bool *is_truncated)
+                           bool *is_truncated, int& ret_code)
 {
   if (is_truncated)
     *is_truncated = false;
 
-  bufferlist in, out;
+  bufferlist in;
   rgw_cls_usage_log_read_op call;
   call.start_epoch = start_epoch;
   call.end_epoch = end_epoch;
@@ -636,22 +665,27 @@ int cls_rgw_usage_log_read(IoCtx& io_ctx, const string& oid, const string& user,
   call.bucket = bucket;
   call.iter = read_iter;
   encode(call, in);
-  int r = io_ctx.exec(oid, RGW_CLASS, RGW_USER_USAGE_LOG_READ, in, out);
+
+  UsageLogReadCompletion *cb = new UsageLogReadCompletion(&read_iter, &usage, is_truncated, &ret_code);
+  op.exec(RGW_CLASS, RGW_BUCKET_LIST, in, cb);
+
+}
+
+int cls_rgw_usage_log_read(IoCtx& io_ctx, const string& oid, const string& user, const string& bucket,
+                           uint64_t start_epoch, uint64_t end_epoch, uint32_t max_entries,
+                           string& read_iter, map<rgw_user_bucket, rgw_usage_log_entry>& usage,
+                           bool *is_truncated, int& ret_code)
+{
+  librados::ObjectReadOperation op;
+  cls_rgw_usage_log_read(op, user, bucket, start_epoch, end_epoch, max_entries, 
+                         read_iter, usage, is_truncated, ret_code);
+
+  int r = io_ctx.operate(oid, &op, nullptr);
   if (r < 0)
     return r;
 
-  try {
-    rgw_cls_usage_log_read_ret result;
-    auto iter = out.cbegin();
-    decode(result, iter);
-    read_iter = result.next_iter;
-    if (is_truncated)
-      *is_truncated = result.truncated;
-
-    usage = result.usage;
-  } catch (buffer::error& e) {
-    return -EINVAL;
-  }
+  if (ret_code == -EINVAL)
+    return ret_code;
 
   return 0;
 }

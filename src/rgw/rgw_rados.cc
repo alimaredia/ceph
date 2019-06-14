@@ -9393,9 +9393,15 @@ int RGWRados::cls_obj_usage_log_read(const string& oid, const string& user, cons
   }
 
   *is_truncated = false;
+  librados::ObjectReadOperation op;
+  int ret_code = 0;
 
-  r = cls_rgw_usage_log_read(ref.ioctx, ref.obj.oid, user, bucket, start_epoch, end_epoch,
-			     max_entries, read_iter, usage, is_truncated);
+  cls_rgw_usage_log_read(op, user, bucket, start_epoch, end_epoch, max_entries, read_iter, usage, is_truncated, ret_code);
+
+  if (ret_code == -EINVAL)
+    return ret_code;
+
+  r = rgw_rados_operate(ref.ioctx, ref.obj.oid, &op, nullptr, null_yield);
 
   return r;
 }
