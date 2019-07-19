@@ -3,5 +3,5 @@ os_type: ubuntu
 tasks:
 - s3tests:
     client.0:
-      force-branch: wip-list-objects-v2
+      force-branch: wip-bootstrap-fix
       rgw_server: client.0

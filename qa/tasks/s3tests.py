@@ -38,7 +38,7 @@ def download(ctx, config):
 
         log.info("Using branch '%s' for s3tests", s3tests_branch)
         sha1 = client_config.get('sha1')
-        git_remote = client_config.get('git_remote', teuth_config.ceph_git_base_url)
+        git_remote = 'https://github.com/alimaredia/'
         ctx.cluster.only(client).run(
             args=[
                 'git', 'clone',
