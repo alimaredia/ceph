@@ -25,7 +25,7 @@ or::
 
 To execute the module, run::
 
-  ceph hello
+  ceph hello ``yourname``
 
 The log is found at::
 
