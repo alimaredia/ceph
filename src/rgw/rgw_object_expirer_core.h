@@ -45,6 +45,13 @@ public:
                                                                                       rados_svc(_rados_svc),
                                                                                       zone_svc(_zone_svc) {}
 
+  int cls_timeindex_trim_repeat(rgw_rados_ref ref,
+                                const string& oid,
+                                const utime_t& from_time,
+                                const utime_t& to_time,
+                                const string& from_marker,
+                                const string& to_marker);
+
   int objexp_hint_add(const ceph::real_time& delete_at,
                       const string& tenant_name,
                       const string& bucket_name,

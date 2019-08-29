@@ -36,10 +36,6 @@
 #include "cls/rgw/cls_rgw_const.h"
 #include "cls/refcount/cls_refcount_client.h"
 #include "cls/version/cls_version_client.h"
-#include "cls/log/cls_log_client.h"
-#include "cls/lock/cls_lock_client.h"
-#include "cls/user/cls_user_client.h"
-#include "cls/otp/cls_otp_client.h"
 #include "osd/osd_types.h"
 
 #include "rgw_tools.h"
