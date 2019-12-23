@@ -3,5 +3,5 @@ os_type: ubuntu
 tasks:
 - s3tests:
     client.0:
-      force-branch: wip-bootstrap-fix
+      force-branch: wip-python-3-port
       rgw_server: client.0
