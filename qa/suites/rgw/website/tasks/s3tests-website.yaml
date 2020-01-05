@@ -14,6 +14,6 @@ tasks:
       dns-s3website-name: s3-website.
 - s3tests:
     client.0:
-      force-branch: ceph-master
+      force-branch: wip-python-3-port
       rgw_server: client.0
       rgw_website_server: client.1
