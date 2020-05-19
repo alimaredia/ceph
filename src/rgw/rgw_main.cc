@@ -103,6 +103,7 @@ static void signal_fd_finalize()
 static void handle_sigterm(int signum)
 {
   dout(1) << __func__ << dendl;
+  dout(1) << __func__ << "ALI signum: " << signum << dendl;
 #if defined(WITH_RADOSGW_FCGI_FRONTEND)
   FCGX_ShutdownPending();
 #endif

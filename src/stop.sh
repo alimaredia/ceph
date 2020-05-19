@@ -15,6 +15,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Library Public License for more details.
 #
+set -x
 
 test -d dev/osd0/. && test -e dev/sudo && SUDO="sudo"
 
@@ -145,6 +146,7 @@ if [ $stop_all -eq 1 ]; then
         fi
     fi
 
+    #for p in radosgw lt-radosgw apache2 ganesha.nfsd ceph-mgr ceph-mds $ceph_osd ceph-mon ; do
     for p in ceph-mon ceph-mds $ceph_osd ceph-mgr radosgw lt-radosgw apache2 ganesha.nfsd ; do
         for try in 0 1 1 1 1 ; do
             if ! pkill -u $MYUID $p ; then
@@ -157,8 +159,8 @@ if [ $stop_all -eq 1 ]; then
     pkill -u $MYUID -f valgrind.bin.\*ceph-mon
     $SUDO pkill -u $MYUID -f valgrind.bin.\*$ceph_osd
     pkill -u $MYUID -f valgrind.bin.\*ceph-mds
-    asok_dir=`dirname $("${CEPH_BIN}"/ceph-conf -c ${conf_fn} --show-config-value admin_socket)`
-    rm -rf "${asok_dir}"
+    #asok_dir=`dirname $("${CEPH_BIN}"/ceph-conf -c ${conf_fn} --show-config-value admin_socket)`
+    #rm -rf "${asok_dir}"
 else
     [ $stop_mon -eq 1 ] && do_killall ceph-mon
     [ $stop_mds -eq 1 ] && do_killall ceph-mds

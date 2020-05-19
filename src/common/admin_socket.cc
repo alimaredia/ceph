@@ -80,6 +80,7 @@ static bool cleanup_atexit = false;
 static void remove_cleanup_file(std::string_view file) {
   std::unique_lock l(cleanup_lock);
 
+  //ldout(m_cct, 1) << "ALI in remove_cleanup_file: " << file << dendl;
   if (auto i = std::find(cleanup_files.cbegin(), cleanup_files.cend(), file);
       i != cleanup_files.cend()) {
     retry_sys_call(::unlink, i->c_str());
@@ -110,6 +111,7 @@ AdminSocket::AdminSocket(CephContext *cct)
 
 AdminSocket::~AdminSocket()
 {
+  ldout(m_cct, 5) << "reaches ~AdminSocket()" << dendl;
   shutdown();
 }
 
@@ -675,7 +677,7 @@ public:
 
 bool AdminSocket::init(const std::string& path)
 {
-  ldout(m_cct, 5) << "init " << path << dendl;
+  ldout(m_cct, 1) << "ALI init " << path << dendl;
 
   /* Set up things for the new thread */
   std::string err;
@@ -722,16 +724,20 @@ void AdminSocket::shutdown()
   // Under normal operation this is unlikely to occur.  However for some unit
   // tests, some object members are not initialized and so cannot be deleted
   // without fault.
+  ldout(m_cct, 5) << "reaches AdminSocket::shutdown()" << dendl;
+
   if (m_wakeup_wr_fd < 0)
     return;
 
-  ldout(m_cct, 5) << "shutdown" << dendl;
   m_shutdown = true;
 
+  ldout(m_cct, 5) << "reaches AdminSocket::shutdown() destroy_wakeup_pipe()" << dendl;
   auto err = destroy_wakeup_pipe();
   if (!err.empty()) {
     lderr(m_cct) << "AdminSocket::shutdown: error: " << err << dendl;
   }
+
+  ldout(m_cct, 5) << "reaches AdminSocket::shutdown() retry_sys_call()" << dendl;
 
   retry_sys_call(::close, m_sock_fd);
 
@@ -744,8 +750,12 @@ void AdminSocket::shutdown()
   unregister_commands(getdescs_hook.get());
   getdescs_hook.reset();
 
+  ldout(m_cct, 5) << "reaches AdminSocket::shutdown() remove_cleanup_file()" << dendl;
+  ldout(m_cct, 5) << "m_path in shutdown is: " << m_path << dendl;
   remove_cleanup_file(m_path);
+  ldout(m_cct, 5) << "after AdminSocket::shutdown() remove_cleanup_file()" << dendl;
   m_path.clear();
+  ldout(m_cct, 5) << "m_path in shutdown after clear is: " << m_path << dendl;
 }
 
 void AdminSocket::wakeup()

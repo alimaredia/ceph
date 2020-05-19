@@ -532,7 +532,8 @@ do_rgw_conf() {
         wconf << EOF
 [client.rgw.${current_port}]
         rgw frontends = $rgw_frontend port=${current_port}
-        admin socket = ${CEPH_OUT_DIR}/radosgw.${current_port}.asok
+        admin socket = ${CEPH_ASOK_DIR}/radosgw.${current_port}.asok
+        debug rgw = 20
 EOF
         current_port=$((current_port + 1))
 done
@@ -661,6 +662,7 @@ EOF
         keyring = $keyring_fn
         log file = $CEPH_OUT_DIR/\$name.\$pid.log
         admin socket = $CEPH_ASOK_DIR/\$name.\$pid.asok
+        debug rgw = 20
 
         ; needed for s3tests
         rgw crypt s3 kms backend = testing
@@ -1451,7 +1453,7 @@ do_rgw()
     # Start server
     RGWDEBUG=""
     if [ "$debug" -ne 0 ]; then
-        RGWDEBUG="--debug-rgw=20 --debug-ms=1"
+        RGWDEBUG="--debug-rgw=20"
     fi
 
     local CEPH_RGW_PORT_NUM="${CEPH_RGW_PORT}"
@@ -1477,8 +1479,9 @@ do_rgw()
         debug echo start rgw on http${CEPH_RGW_HTTPS}://localhost:${current_port}
         run 'rgw' $current_port $RGWSUDO $CEPH_BIN/radosgw -c $conf_fn \
             --log-file=${CEPH_OUT_DIR}/radosgw.${current_port}.log \
-            --admin-socket=${CEPH_OUT_DIR}/radosgw.${current_port}.asok \
+            --admin-socket=${CEPH_ASOK_DIR}/radosgw.${current_port}.asok \
             --pid-file=${CEPH_OUT_DIR}/radosgw.${current_port}.pid \
+            --debug_asok=20 \
             ${RGWDEBUG} \
             -n ${rgw_name} \
             "--rgw_frontends=${rgw_frontend} port=${current_port}${CEPH_RGW_HTTPS}"
@@ -1543,3 +1546,5 @@ if [ -f "$STRAY_CONF_PATH" -a -n "$conf_fn" -a ! "$conf_fn" -ef "$STRAY_CONF_PAT
     echo "NOTE:"
     echo "    Remember to restart cluster after removing $STRAY_CONF_PATH"
 fi
+
+ps ax | grep ceph
