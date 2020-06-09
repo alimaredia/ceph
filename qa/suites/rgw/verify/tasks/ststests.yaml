@@ -4,9 +4,3 @@ tasks:
       force-branch: master
       git_remote: git://github.com/TRYTOBE8TME/
       rgw_server: client.0
-overrides:
-  ceph:
-    conf:
-      client:
-              rgw sts key: abcdefghijklmnop
-              rgw s3 auth use sts : true
