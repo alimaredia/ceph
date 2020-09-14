@@ -184,6 +184,8 @@ extern int process_request(rgw::sal::RGWRadosStore* store,
                            OpsLogSocket* olog,
                            optional_yield y,
                            rgw::dmclock::Scheduler *scheduler,
+                           std::string_view method,
+                           std::string_view target,
                            int* http_ret = nullptr);
 
 extern int rgw_process_authenticated(RGWHandler_REST* handler,

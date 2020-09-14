@@ -210,9 +210,12 @@ void handle_connection(boost::asio::io_context& context,
       RGWRestfulIO client(cct, &real_client_io);
       auto y = optional_yield{context, yield};
       int http_ret = 0;
+
+      std::string_view method(message.method_string().data(), message.method_string().size());
+      std::string_view target(message.target().data(), message.target().size());
       process_request(env.store, env.rest, &req, env.uri_prefix,
                       *env.auth_registry, &client, env.olog, y,
-                      scheduler, &http_ret);
+                      scheduler, method, target, &http_ret);
 
       if (cct->_conf->subsys.should_gather(dout_subsys, 1)) {
         // access log line elements begin per Apache Combined Log Format with additions following

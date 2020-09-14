@@ -178,6 +178,8 @@ int process_request(rgw::sal::RGWRadosStore* const store,
                     OpsLogSocket* const olog,
                     optional_yield yield,
 		    rgw::dmclock::Scheduler *scheduler,
+                    std::string_view method,
+                    std::string_view target,
                     int* http_ret)
 {
   int ret = client_io->init(g_ceph_context);
@@ -320,6 +322,8 @@ done:
 	  << " op status=" << op_ret
 	  << " http_status=" << s->err.http_ret
 	  << " latency=" << s->time_elapsed()
+	  << " op method=" << method
+	  << " op target=" << target
 	  << " ======"
 	  << dendl;
 
