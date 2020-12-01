@@ -1,0 +1,19 @@
+overrides:
+  ceph:
+    conf:
+      client:
+        rgw d3n l1 local datacache enabled: true
+        rgw enable ops log: true
+        rgw d3n l1 datacache path: /tmp/rgw_datacache/
+        rgw d3n l1 datacache size: 10737418240
+  install:
+    extra_packages:
+       deb: ['s3cmd']
+       rpm: ['s3cmd']
+  rgw:
+    datacache: true
+    datacache_path: /tmp/rgw_datacache
+
+tasks:
+- rgw-datacache:
+    client.0: null

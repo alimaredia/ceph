@@ -3,6 +3,9 @@ os_type: centos
 
 tasks:
 - install:
+      extra_packages:
+        deb: ['s3cmd']
+        rpm: ['s3cmd']
 #    flavor: notcmalloc
 - ceph:
 - openssl_keys:
