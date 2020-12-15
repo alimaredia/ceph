@@ -94,7 +94,7 @@ public:
   /// using a rados lock to provide atomicity
   RGWCoroutine* trim_log_period_cr(RGWPeriodHistory::Cursor period,
                                    RGWObjVersionTracker *objv) const;
-  int read_history(RGWMetadataLogHistory *state, RGWObjVersionTracker *objv_tracker,optional_yield y) const;
+  int read_history(RGWMetadataLogHistory *state, RGWObjVersionTracker *objv_tracker,optional_yield y, const DoutPrefixProvider *dpp) const;
   int write_history(const RGWMetadataLogHistory& state,
                     RGWObjVersionTracker *objv_tracker,
 		    optional_yield y, bool exclusive = false);

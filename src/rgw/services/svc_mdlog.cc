@@ -58,13 +58,14 @@ int RGWSI_MDLog::do_start(optional_yield y)
 
 int RGWSI_MDLog::read_history(RGWMetadataLogHistory *state,
                               RGWObjVersionTracker *objv_tracker,
-			      optional_yield y) const
+			      optional_yield y,
+                              const DoutPrefixProvider *dpp) const
 {
   auto obj_ctx = svc.sysobj->init_obj_ctx();
   auto& pool = svc.zone->get_zone_params().log_pool;
   const auto& oid = RGWMetadataLogHistory::oid;
   bufferlist bl;
-  int ret = rgw_get_system_obj(obj_ctx, pool, oid, bl, objv_tracker, nullptr, y);
+  int ret = rgw_get_system_obj(obj_ctx, pool, oid, bl, objv_tracker, nullptr, y, dpp);
   if (ret < 0) {
     return ret;
   }
