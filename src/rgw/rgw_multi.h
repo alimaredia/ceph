@@ -8,6 +8,7 @@
 #include "rgw_xml.h"
 #include "rgw_obj_manifest.h"
 #include "rgw_compression_types.h"
+#include "common/dout.h"
 
 namespace rgw { namespace sal {
   class RGWRadosStore;
@@ -108,7 +109,8 @@ public:
 
 extern bool is_v2_upload_id(const string& upload_id);
 
-extern int list_multipart_parts(rgw::sal::RGWRadosStore *store, RGWBucketInfo& bucket_info,
+extern int list_multipart_parts(const DoutPrefixProvider *dpp, 
+                                rgw::sal::RGWRadosStore *store, RGWBucketInfo& bucket_info,
 				CephContext *cct,
                                 const string& upload_id,
                                 const string& meta_oid, int num_parts,
@@ -116,7 +118,8 @@ extern int list_multipart_parts(rgw::sal::RGWRadosStore *store, RGWBucketInfo& b
                                 int *next_marker, bool *truncated,
                                 bool assume_unsorted = false);
 
-extern int list_multipart_parts(rgw::sal::RGWRadosStore *store, struct req_state *s,
+extern int list_multipart_parts(const DoutPrefixProvider *dpp, 
+                                rgw::sal::RGWRadosStore *store, struct req_state *s,
                                 const string& upload_id,
                                 const string& meta_oid, int num_parts,
                                 int marker, map<uint32_t, RGWUploadPartInfo>& parts,

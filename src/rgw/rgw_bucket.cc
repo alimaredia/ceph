@@ -417,7 +417,7 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
       ret = store->getRados()->get_obj_state(dpp, &obj_ctx, info, obj, &astate, false, y);
       if (ret == -ENOENT) {
-        dout(1) << "WARNING: cannot find obj state for obj " << obj.get_oid() << dendl;
+        ldpp_dout(dpp, 1) << "WARNING: cannot find obj state for obj " << obj.get_oid() << dendl;
         continue;
       }
       if (ret < 0) {
@@ -427,17 +427,17 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
       if (astate->manifest) {
         RGWObjManifest& manifest = *astate->manifest;
-        RGWObjManifest::obj_iterator miter = manifest.obj_begin();
+        RGWObjManifest::obj_iterator miter = manifest.obj_begin(dpp);
         rgw_obj head_obj = manifest.get_obj();
         rgw_raw_obj raw_head_obj;
         store->getRados()->obj_to_raw(info.placement_rule, head_obj, &raw_head_obj);
 
 
-        for (; miter != manifest.obj_end() && max_aio--; ++miter) {
+        for (; miter != manifest.obj_end(dpp) && max_aio--; ++miter) {
           if (!max_aio) {
             ret = drain_handles(handles);
             if (ret < 0) {
-              lderr(store->ctx()) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
+              ldpp_dout(dpp, -1) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
               return ret;
             }
             max_aio = concurrent_max;
@@ -451,14 +451,14 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
           ret = store->getRados()->delete_raw_obj_aio(last_obj, handles);
           if (ret < 0) {
-            lderr(store->ctx()) << "ERROR: delete obj aio failed with " << ret << dendl;
+            ldpp_dout(dpp, -1) << "ERROR: delete obj aio failed with " << ret << dendl;
             return ret;
           }
         } // for all shadow objs
 
         ret = store->getRados()->delete_obj_aio(dpp, head_obj, info, astate, handles, keep_index_consistent, null_yield);
         if (ret < 0) {
-          lderr(store->ctx()) << "ERROR: delete obj aio failed with " << ret << dendl;
+          ldpp_dout(dpp, -1) << "ERROR: delete obj aio failed with " << ret << dendl;
           return ret;
         }
       }
@@ -466,7 +466,7 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
       if (!max_aio) {
         ret = drain_handles(handles);
         if (ret < 0) {
-          lderr(store->ctx()) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
+          ldpp_dout(dpp, -1) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
           return ret;
         }
         max_aio = concurrent_max;
@@ -477,13 +477,13 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
   ret = drain_handles(handles);
   if (ret < 0) {
-    lderr(store->ctx()) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
     return ret;
   }
 
-  ret = store->ctl()->bucket->sync_user_stats(info.owner, info, y);
+  ret = store->ctl()->bucket->sync_user_stats(dpp, info.owner, info, y);
   if (ret < 0) {
-     dout(1) << "WARNING: failed sync user stats before bucket delete. ret=" <<  ret << dendl;
+     ldpp_dout(dpp, 1) << "WARNING: failed sync user stats before bucket delete. ret=" <<  ret << dendl;
   }
 
   RGWObjVersionTracker objv_tracker;
@@ -493,13 +493,13 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
   // remain are detritus from a prior bug
   ret = store->getRados()->delete_bucket(info, objv_tracker, y, dpp, false);
   if (ret < 0) {
-    lderr(store->ctx()) << "ERROR: could not remove bucket " << bucket.name << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: could not remove bucket " << bucket.name << dendl;
     return ret;
   }
 
   ret = store->ctl()->bucket->unlink_bucket(info.owner, bucket, null_yield, dpp, false);
   if (ret < 0) {
-    lderr(store->ctx()) << "ERROR: unable to remove user bucket information" << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: unable to remove user bucket information" << dendl;
   }
 
   return ret;
@@ -1835,7 +1835,7 @@ static int fix_single_bucket_lc(rgw::sal::RGWRadosStore *store,
     return ret;
   }
 
-  return rgw::lc::fix_lc_shard_entry(store, store->get_rgwlc()->get_lc(), bucket_info,
+  return rgw::lc::fix_lc_shard_entry(dpp, store, store->get_rgwlc()->get_lc(), bucket_info,
 				     bucket_attrs);
 }
 
@@ -2540,7 +2540,7 @@ public:
     obj->get_bucket_info().encode(*bl);
   }
 
-  int put_check() override;
+  int put_check(const DoutPrefixProvider *dpp) override;
   int put_checked(const DoutPrefixProvider *dpp) override;
   int put_post(const DoutPrefixProvider *dpp) override;
 };
@@ -2585,7 +2585,7 @@ void init_default_bucket_layout(CephContext *cct, rgw::BucketLayout& layout,
   }
 }
 
-int RGWMetadataHandlerPut_BucketInstance::put_check()
+int RGWMetadataHandlerPut_BucketInstance::put_check(const DoutPrefixProvider *dpp)
 {
   int ret;
 
@@ -2624,9 +2624,9 @@ int RGWMetadataHandlerPut_BucketInstance::put_check()
     bci.info.bucket.tenant = tenant_name;
     // if the sync module never writes data, don't require the zone to specify all placement targets
     if (bihandler->svc.zone->sync_module_supports_writes()) {
-      ret = bihandler->svc.zone->select_bucket_location_by_rule(bci.info.placement_rule, &rule_info, y);
+      ret = bihandler->svc.zone->select_bucket_location_by_rule(dpp, bci.info.placement_rule, &rule_info, y);
       if (ret < 0) {
-        ldout(cct, 0) << "ERROR: select_bucket_placement() returned " << ret << dendl;
+        ldpp_dout(dpp, 0) << "ERROR: select_bucket_placement() returned " << ret << dendl;
         return ret;
       }
     }
@@ -3084,7 +3084,7 @@ int RGWBucketCtl::do_link_bucket(RGWSI_Bucket_EP_Ctx& ctx,
     }
   }
 
-  ret = ctl.user->add_bucket(user_id, bucket, creation_time, y);
+  ret = ctl.user->add_bucket(dpp, user_id, bucket, creation_time, y);
   if (ret < 0) {
     ldout(cct, 0) << "ERROR: error adding bucket to user directory:"
 		  << " user=" << user_id
@@ -3130,7 +3130,7 @@ int RGWBucketCtl::do_unlink_bucket(RGWSI_Bucket_EP_Ctx& ctx,
 				   optional_yield y,
                                    const DoutPrefixProvider *dpp)
 {
-  int ret = ctl.user->remove_bucket(user_id, bucket, y);
+  int ret = ctl.user->remove_bucket(dpp, user_id, bucket, y);
   if (ret < 0) {
     ldpp_dout(dpp, 0) << "ERROR: error removing bucket from directory: "
         << cpp_strerror(-ret)<< dendl;
@@ -3294,7 +3294,8 @@ int RGWBucketCtl::read_buckets_stats(map<string, RGWBucketEnt>& m,
   });
 }
 
-int RGWBucketCtl::sync_user_stats(const rgw_user& user_id,
+int RGWBucketCtl::sync_user_stats(const DoutPrefixProvider *dpp, 
+                                  const rgw_user& user_id,
                                   const RGWBucketInfo& bucket_info,
 				  optional_yield y,
                                   RGWBucketEnt* pent)
@@ -3305,11 +3306,11 @@ int RGWBucketCtl::sync_user_stats(const rgw_user& user_id,
   }
   int r = svc.bi->read_stats(bucket_info, pent, null_yield);
   if (r < 0) {
-    ldout(cct, 20) << __func__ << "(): failed to read bucket stats (r=" << r << ")" << dendl;
+    ldpp_dout(dpp, 20) << __func__ << "(): failed to read bucket stats (r=" << r << ")" << dendl;
     return r;
   }
 
-  return ctl.user->flush_bucket_stats(user_id, *pent, y);
+  return ctl.user->flush_bucket_stats(dpp, user_id, *pent, y);
 }
 
 int RGWBucketCtl::get_sync_policy_handler(std::optional<rgw_zone_id> zone,

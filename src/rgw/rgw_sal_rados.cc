@@ -133,7 +133,7 @@ int RGWRadosBucket::remove_bucket(const DoutPrefixProvider *dpp, bool delete_chi
     }
   }
 
-  ret = store->ctl()->bucket->sync_user_stats(info.owner, info, y);
+  ret = store->ctl()->bucket->sync_user_stats(dpp, info.owner, info, y);
   if (ret < 0) {
      ldout(store->ctx(), 1) << "WARNING: failed sync user stats before bucket delete. ret=" <<  ret << dendl;
   }
@@ -153,7 +153,7 @@ int RGWRadosBucket::remove_bucket(const DoutPrefixProvider *dpp, bool delete_chi
   // they should be removed (note that any pending notifications on the bucket are still going to be sent)
   RGWPubSub ps(store, info.owner.tenant);
   RGWPubSub::Bucket ps_bucket(&ps, info.bucket);
-  const auto ps_ret = ps_bucket.remove_notifications(y);
+  const auto ps_ret = ps_bucket.remove_notifications(dpp, y);
   if (ps_ret < 0 && ps_ret != -ENOENT) {
     lderr(store->ctx()) << "ERROR: unable to remove notifications from bucket. ret=" << ps_ret << dendl;
   }
@@ -165,7 +165,7 @@ int RGWRadosBucket::remove_bucket(const DoutPrefixProvider *dpp, bool delete_chi
 
   if (forward_to_master) {
     bufferlist in_data;
-    ret = store->forward_request_to_master(owner, &ot.read_version, in_data, nullptr, *req_info, y);
+    ret = store->forward_request_to_master(dpp, owner, &ot.read_version, in_data, nullptr, *req_info, y);
     if (ret < 0) {
       if (ret == -ENOENT) {
 	/* adjust error, we want to return with NoSuchBucket and not
@@ -226,9 +226,9 @@ int RGWRadosBucket::read_bucket_stats(const DoutPrefixProvider *dpp, optional_yi
       return ret;
 }
 
-int RGWRadosBucket::sync_user_stats(optional_yield y)
+int RGWRadosBucket::sync_user_stats(const DoutPrefixProvider *dpp, optional_yield y)
 {
-  return store->ctl()->bucket->sync_user_stats(owner->get_id(), info, y);
+  return store->ctl()->bucket->sync_user_stats(dpp, owner->get_id(), info, y);
 }
 
 int RGWRadosBucket::update_container_stats(const DoutPrefixProvider *dpp)
@@ -573,7 +573,7 @@ int RGWRadosObject::omap_get_vals_by_keys(const std::string& oid,
   return cur_ioctx.omap_get_vals_by_keys(oid, keys, vals);
 }
 
-int RGWRadosObject::omap_set_val_by_key(const std::string& key, bufferlist& val,
+int RGWRadosObject::omap_set_val_by_key(const DoutPrefixProvider *dpp, const std::string& key, bufferlist& val,
 					bool must_exist, optional_yield y)
 {
   rgw_raw_obj raw_meta_obj;
@@ -584,7 +584,7 @@ int RGWRadosObject::omap_set_val_by_key(const std::string& key, bufferlist& val,
   auto obj_ctx = store->svc()->sysobj->init_obj_ctx();
   auto sysobj = obj_ctx.get_obj(raw_meta_obj);
 
-  return sysobj.omap().set_must_exist(must_exist).set(key, val, y);
+  return sysobj.omap().set_must_exist(must_exist).set(dpp, key, val, y);
 }
 
 MPSerializer* RGWRadosObject::get_serializer(const std::string& lock_name)
@@ -891,7 +891,8 @@ int RGWRadosStore::get_bucket(const DoutPrefixProvider *dpp, RGWUser* u, const s
   return get_bucket(dpp, u, b, bucket, y);
 }
 
-static int decode_policy(CephContext *cct,
+static int decode_policy(const DoutPrefixProvider *dpp,
+                         CephContext *cct,
                          bufferlist& bl,
                          RGWAccessControlPolicy *policy)
 {
@@ -899,11 +900,11 @@ static int decode_policy(CephContext *cct,
   try {
     policy->decode(iter);
   } catch (buffer::error& err) {
-    ldout(cct, 0) << "ERROR: could not decode policy, caught buffer::error" << dendl;
+    ldpp_dout(dpp, 0) << "ERROR: could not decode policy, caught buffer::error" << dendl;
     return -EIO;
   }
   if (cct->_conf->subsys.should_gather<ceph_subsys_rgw, 15>()) {
-    ldout(cct, 15) << __func__ << " Read AccessControlPolicy";
+    ldpp_dout(dpp, 15) << __func__ << " Read AccessControlPolicy";
     RGWAccessControlPolicy_S3 *s3policy = static_cast<RGWAccessControlPolicy_S3 *>(policy);
     s3policy->to_xml(*_dout);
     *_dout << dendl;
@@ -920,7 +921,7 @@ static int rgw_op_get_bucket_policy_from_attr(const DoutPrefixProvider *dpp, RGW
   auto aiter = bucket_attrs.find(RGW_ATTR_ACL);
 
   if (aiter != bucket_attrs.end()) {
-    int ret = decode_policy(store->ctx(), aiter->second, policy);
+    int ret = decode_policy(dpp, store->ctx(), aiter->second, policy);
     if (ret < 0)
       return ret;
   } else {
@@ -940,7 +941,8 @@ bool RGWRadosStore::is_meta_master()
   return svc()->zone->is_meta_master();
 }
 
-int RGWRadosStore::forward_request_to_master(RGWUser* user, obj_version *objv,
+int RGWRadosStore::forward_request_to_master(const DoutPrefixProvider *dpp,
+                                             RGWUser* user, obj_version *objv,
 					     bufferlist& in_data,
 					     JSONParser *jp, req_info& info,
 					     optional_yield y)
@@ -954,17 +956,17 @@ int RGWRadosStore::forward_request_to_master(RGWUser* user, obj_version *objv,
     ldout(ctx(), 0) << "rest connection is invalid" << dendl;
     return -EINVAL;
   }
-  ldout(ctx(), 0) << "sending request to master zonegroup" << dendl;
+  ldpp_dout(dpp, 0) << "sending request to master zonegroup" << dendl;
   bufferlist response;
   string uid_str = user->get_id().to_str();
 #define MAX_REST_RESPONSE (128 * 1024) // we expect a very small response
-  int ret = svc()->zone->get_master_conn()->forward(rgw_user(uid_str), info,
+  int ret = svc()->zone->get_master_conn()->forward(dpp, rgw_user(uid_str), info,
                                                     objv, MAX_REST_RESPONSE,
 						    &in_data, &response, y);
   if (ret < 0)
     return ret;
 
-  ldout(ctx(), 20) << "response: " << response.c_str() << dendl;
+  ldpp_dout(dpp, 20) << "response: " << response.c_str() << dendl;
   if (jp && !jp->parse(response.c_str(), response.length())) {
     ldout(ctx(), 0) << "failed parsing response from master zonegroup" << dendl;
     return -EINVAL;
@@ -1059,7 +1061,7 @@ int RGWRadosStore::create_bucket(const DoutPrefixProvider *dpp,
 
   if (!svc()->zone->is_meta_master()) {
     JSONParser jp;
-    ret = forward_request_to_master(&u, NULL, in_data, &jp, req_info, y);
+    ret = forward_request_to_master(dpp, &u, NULL, in_data, &jp, req_info, y);
     if (ret < 0) {
       return ret;
     }
@@ -1091,7 +1093,7 @@ int RGWRadosStore::create_bucket(const DoutPrefixProvider *dpp,
 
   if (*existed) {
     rgw_placement_rule selected_placement_rule;
-    ret = svc()->zone->select_bucket_placement(u.get_info(),
+    ret = svc()->zone->select_bucket_placement(dpp, u.get_info(),
 					       zid, placement_rule,
 					       &selected_placement_rule, nullptr, y);
     if (selected_placement_rule != info.placement_rule) {
@@ -1127,9 +1129,9 @@ std::unique_ptr<Lifecycle> RGWRadosStore::get_lifecycle(void)
   return std::unique_ptr<Lifecycle>(new RadosLifecycle(this));
 }
 
-int RGWRadosStore::delete_raw_obj(const rgw_raw_obj& obj)
+int RGWRadosStore::delete_raw_obj(const DoutPrefixProvider *dpp, const rgw_raw_obj& obj)
 {
-  return rados->delete_raw_obj(obj);
+  return rados->delete_raw_obj(dpp, obj);
 }
 
 void RGWRadosStore::get_raw_obj(const rgw_placement_rule& placement_rule, const rgw_obj& obj, rgw_raw_obj* raw_obj)
@@ -1155,12 +1157,12 @@ MPRadosSerializer::MPRadosSerializer(RGWRadosStore* store, RGWRadosObject* obj, 
   store->getRados()->open_pool_ctx(meta_pool, ioctx, true);
 }
 
-int MPRadosSerializer::try_lock(utime_t dur, optional_yield y)
+int MPRadosSerializer::try_lock(const DoutPrefixProvider *dpp, utime_t dur, optional_yield y)
 {
   op.assert_exists();
   lock.set_duration(dur);
   lock.lock_exclusive(&op);
-  int ret = rgw_rados_operate(ioctx, oid, &op, y);
+  int ret = rgw_rados_operate(dpp, ioctx, oid, &op, y);
   if (! ret) {
     locked = true;
   }
@@ -1174,7 +1176,7 @@ LCRadosSerializer::LCRadosSerializer(RGWRadosStore* store, const std::string& _o
   lock.set_cookie(cookie);
 }
 
-int LCRadosSerializer::try_lock(utime_t dur, optional_yield y)
+int LCRadosSerializer::try_lock(const DoutPrefixProvider *dpp, utime_t dur, optional_yield y)
 {
   lock.set_duration(dur);
   return lock.lock_exclusive(ioctx, oid);
