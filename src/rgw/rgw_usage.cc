@@ -165,7 +165,7 @@ int RGWUsage::trim(const DoutPrefixProvider *dpp, rgw::sal::RGWStore* store,
   }
 }
 
-int RGWUsage::clear(rgw::sal::RGWStore* store)
+int RGWUsage::clear(const DoutPrefixProvider *dpp, rgw::sal::RGWStore* store)
 {
-  return store->clear_usage();
+  return store->clear_usage(dpp);
 }

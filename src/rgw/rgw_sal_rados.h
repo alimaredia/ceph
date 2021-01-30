@@ -223,7 +223,7 @@ class RGWRadosObject : public RGWObject {
     virtual int omap_get_vals_by_keys(const std::string& oid,
 			      const std::set<std::string>& keys,
 			      RGWAttrs *vals) override;
-    virtual int omap_set_val_by_key(const std::string& key, bufferlist& val,
+    virtual int omap_set_val_by_key(const DoutPrefixProvider *dpp, const std::string& key, bufferlist& val,
 				    bool must_exist, optional_yield y) override;
 
   private:
@@ -299,7 +299,7 @@ class RGWRadosBucket : public RGWBucket {
 				 bool *syncstopped = nullptr) override;
     virtual int get_bucket_stats_async(int shard_id, RGWGetBucketStats_CB *ctx) override;
     virtual int read_bucket_stats(const DoutPrefixProvider *dpp, optional_yield y) override;
-    virtual int sync_user_stats(optional_yield y) override;
+    virtual int sync_user_stats(const DoutPrefixProvider *dpp, optional_yield y) override;
     virtual int update_container_stats(const DoutPrefixProvider *dpp) override;
     virtual int check_bucket_shards(const DoutPrefixProvider *dpp) override;
     virtual int link(const DoutPrefixProvider *dpp, RGWUser* new_user, optional_yield y, bool update_entrypoint, RGWObjVersionTracker* objv) override;
@@ -388,7 +388,7 @@ class RGWRadosStore : public RGWStore {
 			    std::unique_ptr<RGWBucket>* bucket,
 			    optional_yield y) override;
     virtual bool is_meta_master() override;
-    virtual int forward_request_to_master(RGWUser* user, obj_version *objv,
+    virtual int forward_request_to_master(const DoutPrefixProvider *dpp, RGWUser* user, obj_version *objv,
 					  bufferlist& in_data, JSONParser *jp, req_info& info,
 					  optional_yield y) override;
     virtual int defer_gc(const DoutPrefixProvider *dpp, RGWObjectCtx *rctx, RGWBucket* bucket, RGWObject* obj,
@@ -406,7 +406,7 @@ class RGWRadosStore : public RGWStore {
               const DoutPrefixProvider *dpp, optional_yield y) override;
     virtual RGWLC* get_rgwlc(void) override { return rados->get_lc(); }
     virtual RGWCoroutinesManagerRegistry* get_cr_registry() override { return rados->get_cr_registry(); }
-    virtual int delete_raw_obj(const rgw_raw_obj& obj) override;
+    virtual int delete_raw_obj(const DoutPrefixProvider *dpp, const rgw_raw_obj& obj) override;
     virtual int delete_raw_obj_aio(const rgw_raw_obj& obj, Completions* aio) override;
     virtual void get_raw_obj(const rgw_placement_rule& placement_rule, const rgw_obj& obj, rgw_raw_obj* raw_obj) override;
     virtual int get_raw_chunk_size(const DoutPrefixProvider *dpp, const rgw_raw_obj& obj, uint64_t* chunk_size) override;
@@ -493,7 +493,7 @@ class MPRadosSerializer : public MPSerializer {
 public:
   MPRadosSerializer(RGWRadosStore* store, RGWRadosObject* obj, const std::string& lock_name);
 
-  virtual int try_lock(utime_t dur, optional_yield y) override;
+  virtual int try_lock(const DoutPrefixProvider *dpp, utime_t dur, optional_yield y) override;
   virtual int unlock() override {
     return lock.unlock(&ioctx, oid);
   }
@@ -507,7 +507,7 @@ class LCRadosSerializer : public LCSerializer {
 public:
   LCRadosSerializer(RGWRadosStore* store, const std::string& oid, const std::string& lock_name, const std::string& cookie);
 
-  virtual int try_lock(utime_t dur, optional_yield y) override;
+  virtual int try_lock(const DoutPrefixProvider *dpp, utime_t dur, optional_yield y) override;
   virtual int unlock() override {
     return lock.unlock(ioctx, oid);
   }
