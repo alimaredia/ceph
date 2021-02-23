@@ -130,7 +130,7 @@ int list_multipart_parts(const DoutPrefixProvider *dpp, rgw::sal::RGWRadosStore 
        ++iter, ++i) {
     bufferlist& bl = iter->second;
     auto bli = bl.cbegin();
-    RGWUploadPartInfo info;
+    RGWUploadPartInfo info(dpp);
     try {
       decode(info, bli);
     } catch (buffer::error& err) {

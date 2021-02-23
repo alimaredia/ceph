@@ -262,12 +262,12 @@ void RGWObjManifest::obj_iterator::operator++()
 
   stripe_ofs += rule->stripe_max_size;
   cur_stripe++;
-  dout(20) << "RGWObjManifest::operator++(): rule->part_size=" << rule->part_size << " rules.size()=" << manifest->rules.size() << dendl;
+  ldpp_dout(dpp, 20) << "RGWObjManifest::operator++(): rule->part_size=" << rule->part_size << " rules.size()=" << manifest->rules.size() << dendl;
 
   if (rule->part_size > 0) {
     /* multi part, multi stripes object */
 
-    dout(20) << "RGWObjManifest::operator++(): stripe_ofs=" << stripe_ofs << " part_ofs=" << part_ofs << " rule->part_size=" << rule->part_size << dendl;
+    ldpp_dout(dpp, 20) << "RGWObjManifest::operator++(): stripe_ofs=" << stripe_ofs << " part_ofs=" << part_ofs << " rule->part_size=" << rule->part_size << dendl;
 
     if (stripe_ofs >= part_ofs + rule->part_size) {
       /* moved to the next part */
@@ -303,7 +303,7 @@ void RGWObjManifest::obj_iterator::operator++()
     stripe_size = 0;
   }
 
-  dout(20) << "RGWObjManifest::operator++(): result: ofs=" << ofs << " stripe_ofs=" << stripe_ofs << " part_ofs=" << part_ofs << " rule->part_size=" << rule->part_size << dendl;
+  ldpp_dout(dpp, 20) << "RGWObjManifest::operator++(): result: ofs=" << ofs << " stripe_ofs=" << stripe_ofs << " part_ofs=" << part_ofs << " rule->part_size=" << rule->part_size << dendl;
   update_location();
 }
 
@@ -338,7 +338,7 @@ int RGWObjManifest::generator::create_begin(CephContext *cct, RGWObjManifest *_m
 
   bool found = manifest->get_rule(0, &rule);
   if (!found) {
-    derr << "ERROR: manifest->get_rule() could not find rule" << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: manifest->get_rule() could not find rule" << dendl;
     return -EIO;
   }
 

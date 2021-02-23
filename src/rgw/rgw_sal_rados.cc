@@ -891,7 +891,8 @@ int RGWRadosStore::get_bucket(const DoutPrefixProvider *dpp, RGWUser* u, const s
   return get_bucket(dpp, u, b, bucket, y);
 }
 
-static int decode_policy(CephContext *cct,
+static int decode_policy(const DoutPrefixProvider *dpp,
+                         CephContext *cct,
                          bufferlist& bl,
                          RGWAccessControlPolicy *policy)
 {
@@ -899,11 +900,11 @@ static int decode_policy(CephContext *cct,
   try {
     policy->decode(iter);
   } catch (buffer::error& err) {
-    ldout(cct, 0) << "ERROR: could not decode policy, caught buffer::error" << dendl;
+    ldpp_dout(dpp, 0) << "ERROR: could not decode policy, caught buffer::error" << dendl;
     return -EIO;
   }
   if (cct->_conf->subsys.should_gather<ceph_subsys_rgw, 15>()) {
-    ldout(cct, 15) << __func__ << " Read AccessControlPolicy";
+    ldpp_dout(dpp, 15) << __func__ << " Read AccessControlPolicy";
     RGWAccessControlPolicy_S3 *s3policy = static_cast<RGWAccessControlPolicy_S3 *>(policy);
     s3policy->to_xml(*_dout);
     *_dout << dendl;
@@ -920,7 +921,7 @@ static int rgw_op_get_bucket_policy_from_attr(const DoutPrefixProvider *dpp, RGW
   auto aiter = bucket_attrs.find(RGW_ATTR_ACL);
 
   if (aiter != bucket_attrs.end()) {
-    int ret = decode_policy(store->ctx(), aiter->second, policy);
+    int ret = decode_policy(dpp, store->ctx(), aiter->second, policy);
     if (ret < 0)
       return ret;
   } else {

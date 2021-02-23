@@ -436,8 +436,6 @@ int RGWSI_User_RADOS::remove_user_info(RGWSI_MetaBackend::Context *_ctx,
 {
   int ret;
 
-  auto cct = svc.meta_be->ctx();
-
   auto kiter = info.access_keys.begin();
   for (; kiter != info.access_keys.end(); ++kiter) {
     ldpp_dout(dpp, 10) << "removing key index: " << kiter->first << dendl;

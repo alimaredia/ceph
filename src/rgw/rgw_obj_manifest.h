@@ -146,6 +146,7 @@ WRITE_CLASS_ENCODER(RGWObjManifestRule)
 
 class RGWObjManifest {
 protected:
+  const DoutPrefixProvider *dpp;
   bool explicit_objs{false}; /* really old manifest? */
   map<uint64_t, RGWObjManifestPart> objs;
 
@@ -173,7 +174,7 @@ protected:
   }
 public:
 
-  RGWObjManifest() : begin_iter(this), end_iter(this) {}
+  RGWObjManifest(const DoutPrefixProvider *_dpp) : dpp(_dpp), begin_iter(this), end_iter(this) {}
   RGWObjManifest(const RGWObjManifest& rhs) {
     *this = rhs;
   }

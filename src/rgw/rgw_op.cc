@@ -163,7 +163,8 @@ done:
   return r;
 }
 
-static int decode_policy(CephContext *cct,
+static int decode_policy(const DoutPrefixProvider *dpp,
+                         CephContext *cct,
                          bufferlist& bl,
                          RGWAccessControlPolicy *policy)
 {
@@ -171,11 +172,11 @@ static int decode_policy(CephContext *cct,
   try {
     policy->decode(iter);
   } catch (buffer::error& err) {
-    ldout(cct, 0) << "ERROR: could not decode policy, caught buffer::error" << dendl;
+    ldpp_dout(dpp, 0) << "ERROR: could not decode policy, caught buffer::error" << dendl;
     return -EIO;
   }
   if (cct->_conf->subsys.should_gather<ceph_subsys_rgw, 15>()) {
-    ldout(cct, 15) << __func__ << " Read AccessControlPolicy";
+    ldpp_dout(dpp, 15) << __func__ << " Read AccessControlPolicy";
     RGWAccessControlPolicy_S3 *s3policy = static_cast<RGWAccessControlPolicy_S3 *>(policy);
     s3policy->to_xml(*_dout);
     *_dout << dendl;
@@ -184,14 +185,15 @@ static int decode_policy(CephContext *cct,
 }
 
 
-static int get_user_policy_from_attr(CephContext * const cct,
+static int get_user_policy_from_attr(const DoutPrefixProvider *dpp,
+                                     CephContext * const cct,
 				     rgw::sal::RGWRadosStore * const store,
 				     map<string, bufferlist>& attrs,
 				     RGWAccessControlPolicy& policy    /* out */)
 {
   auto aiter = attrs.find(RGW_ATTR_ACL);
   if (aiter != attrs.end()) {
-    int ret = decode_policy(cct, aiter->second, &policy);
+    int ret = decode_policy(dpp, cct, aiter->second, &policy);
     if (ret < 0) {
       return ret;
     }
@@ -220,7 +222,7 @@ int rgw_op_get_bucket_policy_from_attr(const DoutPrefixProvider *dpp,
   map<string, bufferlist>::iterator aiter = bucket_attrs.find(RGW_ATTR_ACL);
 
   if (aiter != bucket_attrs.end()) {
-    int ret = decode_policy(cct, aiter->second, policy);
+    int ret = decode_policy(dpp, cct, aiter->second, policy);
     if (ret < 0)
       return ret;
   } else {
@@ -254,7 +256,7 @@ static int get_obj_policy_from_attr(const DoutPrefixProvider *dpp,
 
   ret = rop->get_attr(dpp, RGW_ATTR_ACL, bl, y);
   if (ret >= 0) {
-    ret = decode_policy(cct, bl, policy);
+    ret = decode_policy(dpp, cct, bl, policy);
     if (ret < 0)
       return ret;
   } else if (ret == -ENODATA) {
@@ -645,7 +647,7 @@ int rgw_build_bucket_policies(const DoutPrefixProvider *dpp, rgw::sal::RGWRadosS
     map<string, bufferlist> uattrs;
     ret = store->ctl()->user->get_attrs_by_uid(dpp, acct_acl_user.uid, &uattrs, s->yield);
     if (!ret) {
-      ret = get_user_policy_from_attr(s->cct, store, uattrs, *s->user_acl);
+      ret = get_user_policy_from_attr(dpp, s->cct, store, uattrs, *s->user_acl);
     }
     if (-ENOENT == ret) {
       /* In already existing clusters users won't have ACL. In such case
@@ -1545,7 +1547,7 @@ int RGWGetObj::read_user_manifest_part(rgw::sal::RGWBucket* bucket,
 	  }
   }
 
-  op_ret = rgw_policy_from_attrset(s->cct, part->get_attrs(), &obj_policy);
+  op_ret = rgw_policy_from_attrset(this, s->cct, part->get_attrs(), &obj_policy);
   if (op_ret < 0)
     return op_ret;
 
@@ -5881,7 +5883,7 @@ void RGWCompleteMultipart::execute(optional_yield y)
   std::unique_ptr<rgw::sal::RGWObject> meta_obj;
   std::unique_ptr<rgw::sal::RGWObject> target_obj;
   RGWMPObj mp;
-  RGWObjManifest manifest;
+  RGWObjManifest manifest(this);
   uint64_t olh_epoch = 0;
 
   op_ret = get_params(y);

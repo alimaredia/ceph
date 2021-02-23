@@ -491,7 +491,7 @@ void RGWRESTGenerateHTTPHeaders::set_extra_headers(const map<string, string>& ex
   }
 }
 
-int RGWRESTGenerateHTTPHeaders::set_obj_attrs(map<string, bufferlist>& rgw_attrs)
+int RGWRESTGenerateHTTPHeaders::set_obj_attrs(const DoutPrefixProvider *dpp, map<string, bufferlist>& rgw_attrs)
 {
   map<string, string> new_attrs;
 
@@ -508,9 +508,9 @@ int RGWRESTGenerateHTTPHeaders::set_obj_attrs(map<string, bufferlist>& rgw_attrs
   }
 
   RGWAccessControlPolicy policy;
-  int ret = rgw_policy_from_attrset(cct, rgw_attrs, &policy);
+  int ret = rgw_policy_from_attrset(dpp, cct, rgw_attrs, &policy);
   if (ret < 0) {
-    ldout(cct, 0) << "ERROR: couldn't get policy ret=" << ret << dendl;
+    ldpp_dout(dpp, 0) << "ERROR: couldn't get policy ret=" << ret << dendl;
     return ret;
   }
 
@@ -593,9 +593,9 @@ void RGWRESTStreamS3PutObj::send_init(rgw::sal::RGWObject* obj)
   url = headers_gen.get_url();
 }
 
-int RGWRESTStreamS3PutObj::send_ready(RGWAccessKey& key, map<string, bufferlist>& rgw_attrs, bool send)
+int RGWRESTStreamS3PutObj::send_ready(const DoutPrefixProvider *dpp, RGWAccessKey& key, map<string, bufferlist>& rgw_attrs, bool send)
 {
-  headers_gen.set_obj_attrs(rgw_attrs);
+  headers_gen.set_obj_attrs(dpp, rgw_attrs);
 
   return send_ready(key, send);
 }
@@ -628,10 +628,10 @@ int RGWRESTStreamS3PutObj::send_ready(RGWAccessKey& key, bool send)
   return 0;
 }
 
-int RGWRESTStreamS3PutObj::put_obj_init(RGWAccessKey& key, rgw::sal::RGWObject* obj, uint64_t obj_size, map<string, bufferlist>& attrs, bool send)
+int RGWRESTStreamS3PutObj::put_obj_init(const DoutPrefixProvider *dpp, RGWAccessKey& key, rgw::sal::RGWObject* obj, uint64_t obj_size, map<string, bufferlist>& attrs, bool send)
 {
   send_init(obj);
-  return send_ready(key, attrs, send);
+  return send_ready(dpp, key, attrs, send);
 }
 
 void set_str_from_headers(map<string, string>& out_headers, const string& header_name, string& str)

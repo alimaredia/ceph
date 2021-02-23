@@ -445,7 +445,7 @@ int MultipartObjectProcessor::complete(size_t accounted_size,
     return r;
 
   bufferlist bl;
-  RGWUploadPartInfo info;
+  RGWUploadPartInfo info(dpp);
   string p = "part.";
   bool sorted_omap = is_v2_upload_id(upload_id);
 

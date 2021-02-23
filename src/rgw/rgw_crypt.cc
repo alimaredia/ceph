@@ -383,15 +383,15 @@ RGWGetObj_BlockDecrypt::RGWGetObj_BlockDecrypt(CephContext* cct,
 RGWGetObj_BlockDecrypt::~RGWGetObj_BlockDecrypt() {
 }
 
-int RGWGetObj_BlockDecrypt::read_manifest(bufferlist& manifest_bl) {
+int RGWGetObj_BlockDecrypt::read_manifest(const DoutPrefixProvider *dpp, bufferlist& manifest_bl) {
   parts_len.clear();
-  RGWObjManifest manifest;
+  RGWObjManifest manifest(dpp);
   if (manifest_bl.length()) {
     auto miter = manifest_bl.cbegin();
     try {
       decode(manifest, miter);
     } catch (buffer::error& err) {
-      ldout(cct, 0) << "ERROR: couldn't decode manifest" << dendl;
+      ldpp_dout(dpp, 0) << "ERROR: couldn't decode manifest" << dendl;
       return -EIO;
     }
     RGWObjManifest::obj_iterator mi;
@@ -403,7 +403,7 @@ int RGWGetObj_BlockDecrypt::read_manifest(bufferlist& manifest_bl) {
     }
     if (cct->_conf->subsys.should_gather<ceph_subsys_rgw, 20>()) {
       for (size_t i = 0; i<parts_len.size(); i++) {
-        ldout(cct, 20) << "Manifest part " << i << ", size=" << parts_len[i] << dendl;
+        ldpp_dout(dpp, 20) << "Manifest part " << i << ", size=" << parts_len[i] << dendl;
       }
     }
   }

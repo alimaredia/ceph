@@ -133,7 +133,7 @@ class ManifestObjectProcessor : public HeadObjectProcessor,
   std::unique_ptr<rgw::sal::RGWObject> head_obj;
 
   RadosWriter writer;
-  RGWObjManifest manifest;
+  RGWObjManifest manifest(dpp);
   RGWObjManifest::generator manifest_gen;
   ChunkProcessor chunk;
   StripeProcessor stripe;

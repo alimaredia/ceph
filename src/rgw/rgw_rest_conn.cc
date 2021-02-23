@@ -131,7 +131,7 @@ int RGWRESTConn::put_obj_send_init(rgw::sal::RGWObject* obj, const rgw_http_para
   return 0;
 }
 
-int RGWRESTConn::put_obj_async(const rgw_user& uid, rgw::sal::RGWObject* obj, uint64_t obj_size,
+int RGWRESTConn::put_obj_async(const DoutPrefixProvider *dpp, const rgw_user& uid, rgw::sal::RGWObject* obj, uint64_t obj_size,
                                map<string, bufferlist>& attrs, bool send,
                                RGWRESTStreamS3PutObj **req)
 {
@@ -143,7 +143,7 @@ int RGWRESTConn::put_obj_async(const rgw_user& uid, rgw::sal::RGWObject* obj, ui
   param_vec_t params;
   populate_params(params, &uid, self_zone_group);
   RGWRESTStreamS3PutObj *wr = new RGWRESTStreamS3PutObj(cct, "PUT", url, NULL, &params, host_style);
-  ret = wr->put_obj_init(key, obj, obj_size, attrs, send);
+  ret = wr->put_obj_init(dpp, key, obj, obj_size, attrs, send);
   if (ret < 0) {
     delete wr;
     return ret;

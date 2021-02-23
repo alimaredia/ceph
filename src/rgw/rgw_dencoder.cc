@@ -509,9 +509,9 @@ void RGWBucketEnt::generate_test_instances(list<RGWBucketEnt*>& o)
   o.push_back(new RGWBucketEnt);
 }
 
-void RGWUploadPartInfo::generate_test_instances(list<RGWUploadPartInfo*>& o)
+void RGWUploadPartInfo::generate_test_instances(const DoutPrefixProvider *dpp, list<RGWUploadPartInfo*>& o)
 {
-  RGWUploadPartInfo *i = new RGWUploadPartInfo;
+  RGWUploadPartInfo *i = new RGWUploadPartInfo(dpp);
   i->num = 1;
   i->size = 10 * 1024 * 1024;
   i->etag = "etag";

@@ -81,7 +81,7 @@ static inline void get_obj_bucket_and_oid_loc(const rgw_obj& obj, string& oid, s
   }
 }
 
-int rgw_policy_from_attrset(CephContext *cct, map<string, bufferlist>& attrset, RGWAccessControlPolicy *policy);
+int rgw_policy_from_attrset(const DoutPrefixProvider *dpp, CephContext *cct, map<string, bufferlist>& attrset, RGWAccessControlPolicy *policy);
 
 struct RGWOLHInfo {
   rgw_obj target;
@@ -1266,7 +1266,7 @@ public:
     return get_obj_state(dpp, rctx, bucket_info, obj, state, true, y);
   }
 
-  using iterate_obj_cb = int (*)(const rgw_raw_obj&, off_t, off_t,
+  using iterate_obj_cb = int (*)(const DoutPrefixProvider*, const rgw_raw_obj&, off_t, off_t,
                                  off_t, bool, RGWObjState*, void*);
 
   int iterate_obj(const DoutPrefixProvider *dpp, RGWObjectCtx& ctx, const RGWBucketInfo& bucket_info,
@@ -1274,7 +1274,8 @@ public:
                   uint64_t max_chunk_size, iterate_obj_cb cb, void *arg,
                   optional_yield y);
 
-  int get_obj_iterate_cb(const rgw_raw_obj& read_obj, off_t obj_ofs,
+  int get_obj_iterate_cb(const DoutPrefixProvider *dpp,
+                         const rgw_raw_obj& read_obj, off_t obj_ofs,
                          off_t read_ofs, off_t len, bool is_head_obj,
                          RGWObjState *astate, void *arg);
 

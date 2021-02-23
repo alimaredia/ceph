@@ -86,7 +86,7 @@ public:
   RGWRESTGenerateHTTPHeaders(CephContext *_cct, RGWEnv *_env, req_info *_info) : cct(_cct), new_env(_env), new_info(_info) {}
   void init(const string& method, const string& url, const string& resource, const param_vec_t& params);
   void set_extra_headers(const map<string, string>& extra_headers);
-  int set_obj_attrs(map<string, bufferlist>& rgw_attrs);
+  int set_obj_attrs(const DoutPrefixProvider *dpp, map<string, bufferlist>& rgw_attrs);
   void set_http_attrs(const map<string, string>& http_attrs);
   void set_policy(RGWAccessControlPolicy& policy);
   int sign(RGWAccessKey& key);
@@ -213,12 +213,12 @@ public:
   ~RGWRESTStreamS3PutObj() override;
 
   void send_init(rgw::sal::RGWObject* obj);
-  int send_ready(RGWAccessKey& key, map<string, bufferlist>& rgw_attrs, bool send);
+  int send_ready(const DoutPrefixProvider *dpp, RGWAccessKey& key, map<string, bufferlist>& rgw_attrs, bool send);
   int send_ready(RGWAccessKey& key, const map<string, string>& http_attrs,
                  RGWAccessControlPolicy& policy, bool send);
   int send_ready(RGWAccessKey& key, bool send);
 
-  int put_obj_init(RGWAccessKey& key, rgw::sal::RGWObject* obj, uint64_t obj_size, map<string, bufferlist>& attrs, bool send);
+  int put_obj_init(const DoutPrefixProvider *dpp, RGWAccessKey& key, rgw::sal::RGWObject* obj, uint64_t obj_size, map<string, bufferlist>& attrs, bool send);
 
   RGWGetDataCB *get_out_cb() { return out_cb; }
 };
