@@ -89,13 +89,17 @@ def get_radosgw_endpoint():
         proto = "https"
 
     endpoint = proto + '://localhost:' + port
-    return endpoint
+    return endpoint, proto
 
-def create_s3cmd_config(path):
+def create_s3cmd_config(path, proto):
     """
     Creates a minimal config file for s3cmd
     """
     log.info("RGW Datacache: Creating s3cmd config...")
+
+    use_https_config = "False"
+    if proto == "https":
+        use_https_config = "True"
 
     s3cmd_config = ConfigObj(
         indent_type='',
@@ -103,7 +107,7 @@ def create_s3cmd_config(path):
             'default':
                 {
                 'host_bucket': 'no.way.in.hell',
-                'use_https': 'False',
+                'use_https': use_https_config,
                 },
             }
     )
@@ -111,6 +115,7 @@ def create_s3cmd_config(path):
     f = open(path, 'wb')
     s3cmd_config.write(f)
     f.close()
+    log.info("RGW Datacache: s3cmd config written")
 
 def get_cmd_output(cmd_out):
     out = cmd_out.decode('utf8')
@@ -129,7 +134,7 @@ def main():
     pwd = get_cmd_output(out)
     log.debug("pwd is: %s", pwd)
 
-    endpoint = get_radosgw_endpoint()
+    endpoint, proto = get_radosgw_endpoint()
 
     # create 7M file to put
     outfile = pwd + '/' + FILE_NAME
@@ -141,7 +146,7 @@ def main():
 
     # create s3cmd config
     s3cmd_config_path = pwd + '/s3cfg'
-    create_s3cmd_config(s3cmd_config_path)
+    create_s3cmd_config(s3cmd_config_path, proto)
 
     # create a bucket
     exec_cmd('s3cmd --access_key=%s --secret_key=%s --config=%s --host=%s mb s3://%s' 
