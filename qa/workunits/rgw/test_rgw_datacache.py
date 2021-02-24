@@ -83,19 +83,24 @@ def get_radosgw_endpoint():
     x = out.decode('utf8').split(" ")
     port = [i for i in x if ':' in i][0].split(':')[1]
     log.info('radosgw port: %s' % port)
-    proto = "http"
+    proto = "http://"
+    hostname = 'localhost:'
 
     if port == '443':
-        proto = "https"
+        proto = "https://"
+        out = exec_cmd('hostname')
+        hostname = get_cmd_output(out)
+        hostname = hostname + ".front.sepia.ceph.com:"
 
-    endpoint = proto + '://localhost:' + port
+    endpoint = proto + hostname + port
+    log.info("radosgw endpoint is: %s", endpoint)
     return endpoint, proto
 
 def create_s3cmd_config(path, proto):
     """
     Creates a minimal config file for s3cmd
     """
-    log.info("RGW Datacache: Creating s3cmd config...")
+    log.info("Creating s3cmd config...")
 
     use_https_config = "False"
     if proto == "https":
@@ -115,7 +120,7 @@ def create_s3cmd_config(path, proto):
     f = open(path, 'wb')
     s3cmd_config.write(f)
     f.close()
-    log.info("RGW Datacache: s3cmd config written")
+    log.info("s3cmd config written")
 
 def get_cmd_output(cmd_out):
     out = cmd_out.decode('utf8')
