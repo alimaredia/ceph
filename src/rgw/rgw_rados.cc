@@ -2056,7 +2056,6 @@ int RGWRados::Bucket::List::list_objects_unordered(const DoutPrefixProvider *dpp
                                                    optional_yield y)
 {
   RGWRados *store = target->get_store();
-  CephContext *cct = store->ctx();
   int shard_id = target->get_shard_id();
 
   int count = 0;
@@ -2577,7 +2576,7 @@ int RGWRados::fix_tail_obj_locator(const DoutPrefixProvider *dpp, const RGWBucke
   if (astate->manifest) {
     RGWObjManifest::obj_iterator miter;
     RGWObjManifest& manifest = *astate->manifest;
-    for (miter = manifest.obj_begin(); miter != manifest.obj_end(); ++miter) {
+    for (miter = manifest.obj_begin(dpp); miter != manifest.obj_end(dpp); ++miter) {
       rgw_raw_obj raw_loc = miter.get_location().get_raw_obj(store);
       rgw_obj loc;
       string oid;
@@ -3171,7 +3170,7 @@ int RGWRados::Object::Write::_do_write_meta(const DoutPrefixProvider *dpp,
   epoch = ioctx.get_last_version();
   poolid = ioctx.get_id();
 
-  r = target->complete_atomic_modification();
+  r = target->complete_atomic_modification(dpp);
   if (r < 0) {
     ldpp_dout(dpp, 0) << "ERROR: complete_atomic_modification returned r=" << r << dendl;
   }
@@ -4250,7 +4249,7 @@ int RGWRados::copy_obj(RGWObjectCtx& obj_ctx,
   if (cmp != src_attrs.end())
     attrs[RGW_ATTR_COMPRESSION] = cmp->second;
 
-  RGWObjManifest manifest(dpp);
+  RGWObjManifest manifest;
   RGWObjState *astate = NULL;
 
   ret = get_obj_state(dpp, &obj_ctx, src_bucket->get_info(), src_obj->get_obj(), &astate, y);
@@ -4333,7 +4332,7 @@ int RGWRados::copy_obj(RGWObjectCtx& obj_ctx,
                          mtime, real_time(), attrs, olh_epoch, delete_at, petag, dpp, y);
   }
 
-  RGWObjManifest::obj_iterator miter = astate->manifest->obj_begin();
+  RGWObjManifest::obj_iterator miter = astate->manifest->obj_begin(dpp);
 
   if (copy_first) { // we need to copy first chunk, not increase refcount
     ++miter;
@@ -4372,7 +4371,7 @@ int RGWRados::copy_obj(RGWObjectCtx& obj_ctx,
       manifest.set_tail_placement(tail_placement.placement_rule, src_obj->get_bucket()->get_key());
     }
     string ref_tag;
-    for (; miter != astate->manifest->obj_end(); ++miter) {
+    for (; miter != astate->manifest->obj_end(dpp); ++miter) {
       ObjectWriteOperation op;
       ref_tag = tag + '\0';
       cls_refcount_get(op, ref_tag, true);
@@ -4773,13 +4772,13 @@ int RGWRados::bucket_suspended(const DoutPrefixProvider *dpp, rgw_bucket& bucket
   return 0;
 }
 
-int RGWRados::Object::complete_atomic_modification()
+int RGWRados::Object::complete_atomic_modification(const DoutPrefixProvider *dpp)
 {
   if ((!state->manifest)|| state->keep_tail)
     return 0;
 
   cls_rgw_obj_chain chain;
-  store->update_gc_chain(obj, *state->manifest, &chain);
+  store->update_gc_chain(dpp, obj, *state->manifest, &chain);
 
   if (chain.empty()) {
     return 0;
@@ -4794,12 +4793,12 @@ int RGWRados::Object::complete_atomic_modification()
   return 0;
 }
 
-void RGWRados::update_gc_chain(rgw_obj& head_obj, RGWObjManifest& manifest, cls_rgw_obj_chain *chain)
+void RGWRados::update_gc_chain(const DoutPrefixProvider *dpp, rgw_obj& head_obj, RGWObjManifest& manifest, cls_rgw_obj_chain *chain)
 {
   RGWObjManifest::obj_iterator iter;
   rgw_raw_obj raw_head;
   obj_to_raw(manifest.get_head_placement_rule(), head_obj, &raw_head);
-  for (iter = manifest.obj_begin(); iter != manifest.obj_end(); ++iter) {
+  for (iter = manifest.obj_begin(dpp); iter != manifest.obj_end(dpp); ++iter) {
     const rgw_raw_obj& mobj = iter.get_location().get_raw_obj(store);
     if (mobj == raw_head)
       continue;
@@ -4958,7 +4957,7 @@ int RGWRados::defer_gc(const DoutPrefixProvider *dpp, void *ctx, const RGWBucket
   ldpp_dout(dpp, 0) << "defer chain tag=" << tag << dendl;
 
   cls_rgw_obj_chain chain;
-  update_gc_chain(state->obj, *state->manifest, &chain);
+  update_gc_chain(dpp, state->obj, *state->manifest, &chain);
   return gc->async_defer_chain(tag, chain);
 }
 
@@ -5166,7 +5165,7 @@ int RGWRados::Object::Delete::delete_obj(optional_yield y, const DoutPrefixProvi
     }
     r = index_op.complete_del(dpp, poolid, ioctx.get_last_version(), state->mtime, params.remove_objs);
     
-    int ret = target->complete_atomic_modification();
+    int ret = target->complete_atomic_modification(dpp);
     if (ret < 0) {
       ldpp_dout(dpp, 0) << "ERROR: complete_atomic_modification returned ret=" << ret << dendl;
     }
@@ -5250,12 +5249,12 @@ int RGWRados::delete_obj_index(const rgw_obj& obj, ceph::real_time mtime, const 
   return index_op.complete_del(dpp, -1 /* pool */, 0, mtime, NULL);
 }
 
-static void generate_fake_tag(rgw::sal::RGWStore* store, map<string, bufferlist>& attrset, RGWObjManifest& manifest, bufferlist& manifest_bl, bufferlist& tag_bl)
+static void generate_fake_tag(const DoutPrefixProvider *dpp, rgw::sal::RGWStore* store, map<string, bufferlist>& attrset, RGWObjManifest& manifest, bufferlist& manifest_bl, bufferlist& tag_bl)
 {
   string tag;
 
-  RGWObjManifest::obj_iterator mi = manifest.obj_begin();
-  if (mi != manifest.obj_end()) {
+  RGWObjManifest::obj_iterator mi = manifest.obj_begin(dpp);
+  if (mi != manifest.obj_end(dpp)) {
     if (manifest.has_tail()) // first object usually points at the head, let's skip to a more unique part
       ++mi;
     tag = mi.get_location().get_raw_obj(store).oid;
@@ -5422,7 +5421,7 @@ int RGWRados::get_obj_state_impl(const DoutPrefixProvider *dpp, RGWObjectCtx *rc
     if (cct->_conf->subsys.should_gather<ceph_subsys_rgw, 20>() && \
 	s->manifest->has_explicit_objs()) {
       RGWObjManifest::obj_iterator mi;
-      for (mi = s->manifest->obj_begin(); mi != s->manifest->obj_end(); ++mi) {
+      for (mi = s->manifest->obj_begin(dpp); mi != s->manifest->obj_end(dpp); ++mi) {
         ldpp_dout(dpp, 20) << "manifest: ofs=" << mi.get_ofs() << " loc=" << mi.get_location().get_raw_obj(store) << dendl;
       }
     }
@@ -5432,7 +5431,7 @@ int RGWRados::get_obj_state_impl(const DoutPrefixProvider *dpp, RGWObjectCtx *rc
        * Uh oh, something's wrong, object with manifest should have tag. Let's
        * create one out of the manifest, would be unique
        */
-      generate_fake_tag(store, s->attrset, *s->manifest, manifest_bl, s->obj_tag);
+      generate_fake_tag(dpp, store, s->attrset, *s->manifest, manifest_bl, s->obj_tag);
       s->fake_tag = true;
     }
   }
@@ -5620,10 +5619,11 @@ int RGWRados::append_atomic_test(const DoutPrefixProvider *dpp, RGWObjectCtx *rc
   if (r < 0)
     return r;
 
-  return append_atomic_test(*pstate, op);
+  return append_atomic_test(dpp, *pstate, op);
 }
 
-int RGWRados::append_atomic_test(const RGWObjState* state,
+int RGWRados::append_atomic_test(const DoutPrefixProvider *dpp,
+                                 const RGWObjState* state,
                                  librados::ObjectOperation& op)
 {
   if (!state->is_atomic) {
@@ -6200,7 +6200,6 @@ int RGWRados::Bucket::UpdateIndex::cancel(const DoutPrefixProvider *dpp)
 int RGWRados::Object::Read::read(int64_t ofs, int64_t end, bufferlist& bl, optional_yield y, const DoutPrefixProvider *dpp)
 {
   RGWRados *store = source->get_store();
-  CephContext *cct = store->ctx();
 
   rgw_raw_obj read_obj;
   uint64_t read_ofs = ofs;
@@ -6231,7 +6230,7 @@ int RGWRados::Object::Read::read(int64_t ofs, int64_t end, bufferlist& bl, optio
 
   if (astate->manifest && astate->manifest->has_tail()) {
     /* now get the relevant object part */
-    RGWObjManifest::obj_iterator iter = astate->manifest->obj_find(ofs);
+    RGWObjManifest::obj_iterator iter = astate->manifest->obj_find(dpp, ofs);
 
     uint64_t stripe_ofs = iter.get_stripe_ofs();
     read_obj = iter.get_location().get_raw_obj(store->store);
@@ -6390,7 +6389,7 @@ int RGWRados::get_obj_iterate_cb(const DoutPrefixProvider *dpp,
 
   if (is_head_obj) {
     /* only when reading from the head object do we need to do the atomic test */
-    int r = append_atomic_test(astate, op);
+    int r = append_atomic_test(dpp, astate, op);
     if (r < 0)
       return r;
 
@@ -6478,9 +6477,9 @@ int RGWRados::iterate_obj(const DoutPrefixProvider *dpp, RGWObjectCtx& obj_ctx,
 
   if (astate->manifest) {
     /* now get the relevant object stripe */
-    RGWObjManifest::obj_iterator iter = astate->manifest->obj_find(ofs);
+    RGWObjManifest::obj_iterator iter = astate->manifest->obj_find(dpp, ofs);
 
-    RGWObjManifest::obj_iterator obj_end = astate->manifest->obj_end();
+    RGWObjManifest::obj_iterator obj_end = astate->manifest->obj_end(dpp);
 
     for (; iter != obj_end && ofs <= end; ++iter) {
       off_t stripe_ofs = iter.get_stripe_ofs();
@@ -6496,7 +6495,7 @@ int RGWRados::iterate_obj(const DoutPrefixProvider *dpp, RGWObjectCtx& obj_ctx,
         }
 
         reading_from_head = (read_obj == head_obj);
-        r = cb(read_obj, ofs, read_ofs, read_len, reading_from_head, astate, arg);
+        r = cb(dpp, read_obj, ofs, read_ofs, read_len, reading_from_head, astate, arg);
 	if (r < 0) {
 	  return r;
         }
@@ -6510,7 +6509,7 @@ int RGWRados::iterate_obj(const DoutPrefixProvider *dpp, RGWObjectCtx& obj_ctx,
       read_obj = head_obj;
       uint64_t read_len = std::min(len, max_chunk_size);
 
-      r = cb(read_obj, ofs, ofs, read_len, reading_from_head, astate, arg);
+      r = cb(dpp, read_obj, ofs, ofs, read_len, reading_from_head, astate, arg);
       if (r < 0) {
 	return r;
       }
@@ -8929,23 +8928,23 @@ int RGWRados::check_disk_state(const DoutPrefixProvider *dpp,
   if (iter != astate->attrset.end()) {
     r = decode_policy(iter->second, &owner);
     if (r < 0) {
-      dout(0) << "WARNING: could not decode policy for object: " << obj << dendl;
+      ldpp_dout(dpp, 0) << "WARNING: could not decode policy for object: " << obj << dendl;
     }
   }
 
   if (astate->manifest) {
     RGWObjManifest::obj_iterator miter;
     RGWObjManifest& manifest = *astate->manifest;
-    for (miter = manifest.obj_begin(); miter != manifest.obj_end(); ++miter) {
+    for (miter = manifest.obj_begin(dpp); miter != manifest.obj_end(dpp); ++miter) {
       const rgw_raw_obj& raw_loc = miter.get_location().get_raw_obj(store);
       rgw_obj loc;
       RGWSI_Tier_RADOS::raw_obj_to_obj(manifest.get_obj().bucket, raw_loc, &loc);
 
       if (loc.key.ns == RGW_OBJ_NS_MULTIPART) {
-	dout(10) << "check_disk_state(): removing manifest part from index: " << loc << dendl;
+	ldpp_dout(dpp, 0) << "check_disk_state(): removing manifest part from index: " << loc << dendl;
 	r = delete_obj_index(loc, astate->mtime, dpp);
 	if (r < 0) {
-	  dout(0) << "WARNING: delete_obj_index() returned r=" << r << dendl;
+	  ldpp_dout(dpp, 0) << "WARNING: delete_obj_index() returned r=" << r << dendl;
 	}
       }
     }

@@ -39,11 +39,11 @@ int RGWObjManifest::generator::create_next(uint64_t ofs)
   return 0;
 }
 
-int RGWObjManifest::append(RGWObjManifest& m, const RGWZoneGroup& zonegroup,
+int RGWObjManifest::append(const DoutPrefixProvider *dpp, RGWObjManifest& m, const RGWZoneGroup& zonegroup,
                            const RGWZoneParams& zone_params)
 {
   if (explicit_objs || m.explicit_objs) {
-    return append_explicit(m, zonegroup, zone_params);
+    return append_explicit(dpp, m, zonegroup, zone_params);
   }
 
   if (rules.empty()) {
@@ -63,7 +63,7 @@ int RGWObjManifest::append(RGWObjManifest& m, const RGWZoneGroup& zonegroup,
 
   map<uint64_t, RGWObjManifestRule>::iterator miter = m.rules.begin();
   if (miter == m.rules.end()) {
-    return append_explicit(m, zonegroup, zone_params);
+    return append_explicit(dpp, m, zonegroup, zone_params);
   }
 
   for (; miter != m.rules.end(); ++miter) {
@@ -117,9 +117,9 @@ int RGWObjManifest::append(RGWObjManifest& m, const RGWZoneGroup& zonegroup,
   return 0;
 }
 
-int RGWObjManifest::append(RGWObjManifest& m, RGWSI_Zone *zone_svc)
+int RGWObjManifest::append(const DoutPrefixProvider *dpp, RGWObjManifest& m, RGWSI_Zone *zone_svc)
 {
-  return append(m, zone_svc->get_zonegroup(), zone_svc->get_zone_params());
+  return append(dpp, m, zone_svc->get_zonegroup(), zone_svc->get_zone_params());
 }
 
 void RGWObjManifest::append_rules(RGWObjManifest& m, map<uint64_t, RGWObjManifestRule>::iterator& miter,
@@ -134,14 +134,14 @@ void RGWObjManifest::append_rules(RGWObjManifest& m, map<uint64_t, RGWObjManifes
   }
 }
 
-void RGWObjManifest::convert_to_explicit(const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params)
+void RGWObjManifest::convert_to_explicit(const DoutPrefixProvider *dpp, const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params)
 {
   if (explicit_objs) {
     return;
   }
-  obj_iterator iter = obj_begin();
+  obj_iterator iter = obj_begin(dpp);
 
-  while (iter != obj_end()) {
+  while (iter != obj_end(dpp)) {
     RGWObjManifestPart& part = objs[iter.get_stripe_ofs()];
     const rgw_obj_select& os = iter.get_location();
     const rgw_raw_obj& raw_loc = os.get_raw_obj(zonegroup, zone_params);
@@ -165,13 +165,13 @@ void RGWObjManifest::convert_to_explicit(const RGWZoneGroup& zonegroup, const RG
   prefix.clear();
 }
 
-int RGWObjManifest::append_explicit(RGWObjManifest& m, const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params)
+int RGWObjManifest::append_explicit(const DoutPrefixProvider *dpp, RGWObjManifest& m, const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params)
 {
   if (!explicit_objs) {
-    convert_to_explicit(zonegroup, zone_params);
+    convert_to_explicit(dpp, zonegroup, zone_params);
   }
   if (!m.explicit_objs) {
-    m.convert_to_explicit(zonegroup, zone_params);
+    m.convert_to_explicit(dpp, zonegroup, zone_params);
   }
   map<uint64_t, RGWObjManifestPart>::iterator iter;
   uint64_t base = obj_size;
@@ -317,7 +317,7 @@ int RGWObjManifest::generator::create_begin(CephContext *cct, RGWObjManifest *_m
 
   bool found = manifest->get_rule(0, &rule);
   if (!found) {
-    ldpp_dout(dpp, -1) << "ERROR: manifest->get_rule() could not find rule" << dendl;
+    derr << "ERROR: manifest->get_rule() could not find rule" << dendl;
     return -EIO;
   }
 

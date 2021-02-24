@@ -20,16 +20,15 @@ namespace rgw { namespace sal {
 class RGWMPObj;
 
 struct RGWUploadPartInfo {
-  const DoutPrefixProvider *dpp;
   uint32_t num;
   uint64_t size;
   uint64_t accounted_size{0};
   string etag;
   ceph::real_time modified;
-  RGWObjManifest manifest(dpp);
+  RGWObjManifest manifest;
   RGWCompressionInfo cs_info;
 
-  RGWUploadPartInfo(const DoutPrefixProvider *dpp) : dpp(dpp), num(0), size(0) {}
+  RGWUploadPartInfo() : num(0), size(0) {}
 
   void encode(bufferlist& bl) const {
     ENCODE_START(4, 2, bl);
@@ -59,7 +58,7 @@ struct RGWUploadPartInfo {
     DECODE_FINISH(bl);
   }
   void dump(Formatter *f) const;
-  static void generate_test_instances(const DoutPrefixProvider *dpp, list<RGWUploadPartInfo*>& o);
+  static void generate_test_instances(list<RGWUploadPartInfo*>& o);
 };
 WRITE_CLASS_ENCODER(RGWUploadPartInfo)
 

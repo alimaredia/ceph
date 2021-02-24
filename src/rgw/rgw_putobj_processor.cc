@@ -445,7 +445,7 @@ int MultipartObjectProcessor::complete(size_t accounted_size,
     return r;
 
   bufferlist bl;
-  RGWUploadPartInfo info(dpp);
+  RGWUploadPartInfo info;
   string p = "part.";
   bool sorted_omap = is_v2_upload_id(upload_id);
 
@@ -611,7 +611,7 @@ int AppendObjectProcessor::complete(size_t accounted_size, const string &etag, c
   //For Append obj, disable versioning
   obj_op->params.versioning_disabled = true;
   if (cur_manifest) {
-    cur_manifest->append(manifest, store->svc()->zone);
+    cur_manifest->append(dpp, manifest, store->svc()->zone);
     obj_op->params.manifest = cur_manifest;
   } else {
     obj_op->params.manifest = &manifest;

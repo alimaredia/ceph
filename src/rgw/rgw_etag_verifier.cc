@@ -13,7 +13,7 @@ int create_etag_verifier(const DoutPrefixProvider *dpp,
                          const std::optional<RGWCompressionInfo>& compression,
                          etag_verifier_ptr& verifier)
 {
-  RGWObjManifest manifest(dpp);
+  RGWObjManifest manifest;
 
   try {
     auto miter = manifest_bl.cbegin();
@@ -44,7 +44,7 @@ int create_etag_verifier(const DoutPrefixProvider *dpp,
    * MPU part. These part ETags then become the input for the MPU object
    * Etag.
    */
-  for (auto mi = manifest.obj_begin(); mi != manifest.obj_end(); ++mi) {
+  for (auto mi = manifest.obj_begin(dpp); mi != manifest.obj_end(dpp); ++mi) {
     if (cur_part_ofs == mi.get_part_ofs())
       continue;
     cur_part_ofs = mi.get_part_ofs();

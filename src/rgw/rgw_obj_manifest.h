@@ -163,8 +163,8 @@ protected:
 
   string tail_instance; /* tail object's instance */
 
-  void convert_to_explicit(const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params);
-  int append_explicit(RGWObjManifest& m, const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params);
+  void convert_to_explicit(const DoutPrefixProvider *dpp, const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params);
+  int append_explicit(const DoutPrefixProvider *dpp, RGWObjManifest& m, const RGWZoneGroup& zonegroup, const RGWZoneParams& zone_params);
   void append_rules(RGWObjManifest& m, map<uint64_t, RGWObjManifestRule>::iterator& iter, string *override_prefix);
 
 public:
@@ -314,9 +314,9 @@ public:
   void dump(Formatter *f) const;
   static void generate_test_instances(list<RGWObjManifest*>& o);
 
-  int append(RGWObjManifest& m, const RGWZoneGroup& zonegroup,
+  int append(const DoutPrefixProvider *dpp, RGWObjManifest& m, const RGWZoneGroup& zonegroup,
              const RGWZoneParams& zone_params);
-  int append(RGWObjManifest& m, RGWSI_Zone *zone_svc);
+  int append(const DoutPrefixProvider *dpp, RGWObjManifest& m, RGWSI_Zone *zone_svc);
 
   bool get_rule(uint64_t ofs, RGWObjManifestRule *rule);
 
@@ -407,6 +407,7 @@ public:
   }
 
   class obj_iterator {
+    const DoutPrefixProvider *dpp;
     const RGWObjManifest *manifest = nullptr;
     uint64_t part_ofs = 0;   /* where current part starts */
     uint64_t stripe_ofs = 0; /* where current stripe starts */
@@ -427,10 +428,10 @@ public:
 
   public:
     obj_iterator() = default;
-    explicit obj_iterator(const RGWObjManifest *_m)
-      : obj_iterator(_m, 0)
+    explicit obj_iterator(const DoutPrefixProvider *_dpp, const RGWObjManifest *_m)
+      : obj_iterator(_dpp, _m, 0)
     {}
-    obj_iterator(const RGWObjManifest *_m, uint64_t _ofs) : manifest(_m) {
+    obj_iterator(const DoutPrefixProvider *_dpp, const RGWObjManifest *_m, uint64_t _ofs) : dpp(_dpp), manifest(_m) {
       seek(_ofs);
     }
     void seek(uint64_t ofs);
@@ -490,10 +491,10 @@ public:
     void dump(Formatter *f) const;
   }; // class obj_iterator
 
-  obj_iterator obj_begin() const { return obj_iterator{this}; }
-  obj_iterator obj_end() const { return obj_iterator{this, obj_size}; }
-  obj_iterator obj_find(uint64_t ofs) const {
-    return obj_iterator{this, std::min(ofs, obj_size)};
+  obj_iterator obj_begin(const DoutPrefixProvider *dpp) const { return obj_iterator{dpp, this}; }
+  obj_iterator obj_end(const DoutPrefixProvider *dpp) const { return obj_iterator{dpp, this, obj_size}; }
+  obj_iterator obj_find(const DoutPrefixProvider *dpp, uint64_t ofs) const {
+    return obj_iterator{dpp, this, std::min(ofs, obj_size)};
   }
 
   /*

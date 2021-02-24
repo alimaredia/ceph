@@ -385,7 +385,7 @@ RGWGetObj_BlockDecrypt::~RGWGetObj_BlockDecrypt() {
 
 int RGWGetObj_BlockDecrypt::read_manifest(const DoutPrefixProvider *dpp, bufferlist& manifest_bl) {
   parts_len.clear();
-  RGWObjManifest manifest(dpp);
+  RGWObjManifest manifest;
   if (manifest_bl.length()) {
     auto miter = manifest_bl.cbegin();
     try {
@@ -395,7 +395,7 @@ int RGWGetObj_BlockDecrypt::read_manifest(const DoutPrefixProvider *dpp, bufferl
       return -EIO;
     }
     RGWObjManifest::obj_iterator mi;
-    for (mi = manifest.obj_begin(); mi != manifest.obj_end(); ++mi) {
+    for (mi = manifest.obj_begin(dpp); mi != manifest.obj_end(dpp); ++mi) {
       if (mi.get_cur_stripe() == 0) {
         parts_len.push_back(0);
       }

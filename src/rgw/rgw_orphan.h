@@ -179,8 +179,8 @@ class RGWOrphanSearch {
     return ceph_str_hash_linux(str.c_str(), str.size()) % RGW_ORPHANSEARCH_HASH_PRIME % search_info.num_shards;
   }
 
-  int handle_stat_result(map<int, list<string> >& oids, RGWRados::Object::Stat::Result& result);
-  int pop_and_handle_stat_op(map<int, list<string> >& oids, std::deque<RGWRados::Object::Stat>& ops);
+  int handle_stat_result(const DoutPrefixProvider *dpp, map<int, list<string> >& oids, RGWRados::Object::Stat::Result& result);
+  int pop_and_handle_stat_op(const DoutPrefixProvider *dpp, map<int, list<string> >& oids, std::deque<RGWRados::Object::Stat>& ops);
 
 
   int remove_index(map<int, string>& index);
@@ -260,11 +260,13 @@ class RGWRadosList {
   bool include_rgw_obj_name;
   std::string field_separator;
 
-  int handle_stat_result(RGWRados::Object::Stat::Result& result,
+  int handle_stat_result(const DoutPrefixProvider *dpp, 
+                         RGWRados::Object::Stat::Result& result,
 			 std::string& bucket_name,
 			 rgw_obj_key& obj_key,
 			 std::set<string>& obj_oids);
-  int pop_and_handle_stat_op(RGWObjectCtx& obj_ctx,
+  int pop_and_handle_stat_op(const DoutPrefixProvider *dpp,
+                             RGWObjectCtx& obj_ctx,
 			     std::deque<RGWRados::Object::Stat>& ops);
 
 public:

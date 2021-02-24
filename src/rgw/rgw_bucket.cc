@@ -417,7 +417,7 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
       ret = store->getRados()->get_obj_state(dpp, &obj_ctx, info, obj, &astate, false, y);
       if (ret == -ENOENT) {
-        dout(1) << "WARNING: cannot find obj state for obj " << obj.get_oid() << dendl;
+        ldpp_dout(dpp, 1) << "WARNING: cannot find obj state for obj " << obj.get_oid() << dendl;
         continue;
       }
       if (ret < 0) {
@@ -427,17 +427,17 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
       if (astate->manifest) {
         RGWObjManifest& manifest = *astate->manifest;
-        RGWObjManifest::obj_iterator miter = manifest.obj_begin();
+        RGWObjManifest::obj_iterator miter = manifest.obj_begin(dpp);
         rgw_obj head_obj = manifest.get_obj();
         rgw_raw_obj raw_head_obj;
         store->getRados()->obj_to_raw(info.placement_rule, head_obj, &raw_head_obj);
 
 
-        for (; miter != manifest.obj_end() && max_aio--; ++miter) {
+        for (; miter != manifest.obj_end(dpp) && max_aio--; ++miter) {
           if (!max_aio) {
             ret = drain_handles(handles);
             if (ret < 0) {
-              lderr(store->ctx()) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
+              ldpp_dout(dpp, -1) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
               return ret;
             }
             max_aio = concurrent_max;
@@ -451,14 +451,14 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
           ret = store->getRados()->delete_raw_obj_aio(last_obj, handles);
           if (ret < 0) {
-            lderr(store->ctx()) << "ERROR: delete obj aio failed with " << ret << dendl;
+            ldpp_dout(dpp, -1) << "ERROR: delete obj aio failed with " << ret << dendl;
             return ret;
           }
         } // for all shadow objs
 
         ret = store->getRados()->delete_obj_aio(dpp, head_obj, info, astate, handles, keep_index_consistent, null_yield);
         if (ret < 0) {
-          lderr(store->ctx()) << "ERROR: delete obj aio failed with " << ret << dendl;
+          ldpp_dout(dpp, -1) << "ERROR: delete obj aio failed with " << ret << dendl;
           return ret;
         }
       }
@@ -466,7 +466,7 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
       if (!max_aio) {
         ret = drain_handles(handles);
         if (ret < 0) {
-          lderr(store->ctx()) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
+          ldpp_dout(dpp, -1) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
           return ret;
         }
         max_aio = concurrent_max;
@@ -477,13 +477,13 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
 
   ret = drain_handles(handles);
   if (ret < 0) {
-    lderr(store->ctx()) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: could not drain handles as aio completion returned with " << ret << dendl;
     return ret;
   }
 
   ret = store->ctl()->bucket->sync_user_stats(dpp, info.owner, info, y);
   if (ret < 0) {
-     dout(1) << "WARNING: failed sync user stats before bucket delete. ret=" <<  ret << dendl;
+     ldpp_dout(dpp, 1) << "WARNING: failed sync user stats before bucket delete. ret=" <<  ret << dendl;
   }
 
   RGWObjVersionTracker objv_tracker;
@@ -493,13 +493,13 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWRadosStore *store, rgw_bucket& buck
   // remain are detritus from a prior bug
   ret = store->getRados()->delete_bucket(info, objv_tracker, y, dpp, false);
   if (ret < 0) {
-    lderr(store->ctx()) << "ERROR: could not remove bucket " << bucket.name << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: could not remove bucket " << bucket.name << dendl;
     return ret;
   }
 
   ret = store->ctl()->bucket->unlink_bucket(info.owner, bucket, null_yield, dpp, false);
   if (ret < 0) {
-    lderr(store->ctx()) << "ERROR: unable to remove user bucket information" << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: unable to remove user bucket information" << dendl;
   }
 
   return ret;

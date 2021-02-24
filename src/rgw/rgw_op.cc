@@ -5883,7 +5883,7 @@ void RGWCompleteMultipart::execute(optional_yield y)
   std::unique_ptr<rgw::sal::RGWObject> meta_obj;
   std::unique_ptr<rgw::sal::RGWObject> target_obj;
   RGWMPObj mp;
-  RGWObjManifest manifest(this);
+  RGWObjManifest manifest;
   uint64_t olh_epoch = 0;
 
   op_ret = get_params(y);
@@ -6035,7 +6035,7 @@ void RGWCompleteMultipart::execute(optional_yield y)
         op_ret = -ERR_INVALID_PART;
         return;
       } else {
-        manifest.append(obj_part.manifest, store->svc()->zone);
+        manifest.append(this, obj_part.manifest, store->svc()->zone);
       }
 
       bool part_compressed = (obj_part.cs_info.compression_type != "none");

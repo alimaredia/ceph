@@ -130,7 +130,7 @@ int list_multipart_parts(const DoutPrefixProvider *dpp, rgw::sal::RGWRadosStore 
        ++iter, ++i) {
     bufferlist& bl = iter->second;
     auto bli = bl.cbegin();
-    RGWUploadPartInfo info(dpp);
+    RGWUploadPartInfo info;
     try {
       decode(info, bli);
     } catch (buffer::error& err) {
@@ -241,9 +241,9 @@ int abort_multipart_upload(const DoutPrefixProvider *dpp,
         if (ret < 0 && ret != -ENOENT)
           return ret;
       } else {
-        store->getRados()->update_gc_chain(meta_obj, obj_part.manifest, &chain);
-        RGWObjManifest::obj_iterator oiter = obj_part.manifest.obj_begin();
-        if (oiter != obj_part.manifest.obj_end()) {
+        store->getRados()->update_gc_chain(dpp, meta_obj, obj_part.manifest, &chain);
+        RGWObjManifest::obj_iterator oiter = obj_part.manifest.obj_begin(dpp);
+        if (oiter != obj_part.manifest.obj_end(dpp)) {
           rgw_obj head;
           rgw_raw_obj raw_head = oiter.get_location().get_raw_obj(store);
           RGWSI_Tier_RADOS::raw_obj_to_obj(bucket_info.bucket, raw_head, &head);

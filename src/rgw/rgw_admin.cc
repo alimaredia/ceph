@@ -1371,7 +1371,7 @@ int check_min_obj_stripe_size(rgw::sal::RGWRadosStore *store, RGWBucketInfo& buc
     return 0;
   }
 
-  RGWObjManifest manifest(dpp());
+  RGWObjManifest manifest;
 
   try {
     bufferlist& bl = iter->second;
