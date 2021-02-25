@@ -1969,7 +1969,7 @@ inline int get_system_versioning_params(req_state *s,
       string err;
       *olh_epoch = strict_strtol(epoch_str.c_str(), 10, &err);
       if (!err.empty()) {
-        lsubdout(s->cct, rgw, 0) << "failed to parse versioned-epoch param"
+        ldpp_subdout(s, rgw, 0) << "failed to parse versioned-epoch param"
 				 << dendl;
         return -EINVAL;
       }

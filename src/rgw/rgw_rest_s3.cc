@@ -3454,7 +3454,7 @@ void RGWGetCORS_ObjStore_S3::send_response()
 
 int RGWPutCORS_ObjStore_S3::get_params(optional_yield y)
 {
-  RGWCORSXMLParser_S3 parser(s->cct);
+  RGWCORSXMLParser_S3 parser(this, s->cct);
   RGWCORSConfiguration_S3 *cors_config;
 
   const auto max_size = s->cct->_conf->rgw_max_put_param_size;
