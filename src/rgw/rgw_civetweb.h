@@ -23,7 +23,7 @@ class RGWCivetWeb : public rgw::io::RestfulClient,
 
   rgw::io::StaticOutputBufferer<> txbuf;
 
-  size_t write_data(const char *buf, size_t len) override;
+  size_t write_data(const DoutPrefixProvider *dpp, const char *buf, size_t len) override;
   size_t read_data(char *buf, size_t len);
   size_t dump_date_header();
 
@@ -41,8 +41,8 @@ public:
     return read_data(buf, max);
   }
 
-  size_t send_body(const char* buf, size_t len) override {
-    return write_data(buf, len);
+  size_t send_body(const DoutPrefixProvider *dpp, const char* buf, size_t len) override {
+    return write_data(dpp, buf, len);
   }
 
   size_t complete_request() override;
@@ -53,7 +53,7 @@ public:
     return env;
   }
 
-  explicit RGWCivetWeb(mg_connection *_conn);
+  explicit RGWCivetWeb(const DoutPrefixProvider *dpp, mg_connection *_conn);
 };
 
 #endif

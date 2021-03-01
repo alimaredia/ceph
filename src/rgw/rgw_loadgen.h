@@ -59,7 +59,7 @@ public:
     return read_data(buf, max);
   }
 
-  size_t send_body(const char* buf, size_t len) override {
+  size_t send_body(const DoutPrefixProvider *dpp, const char* buf, size_t len) override {
     return write_data(buf, len);
   }
 

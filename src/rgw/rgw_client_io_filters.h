@@ -110,9 +110,9 @@ public:
     return received;
   }
 
-  size_t send_body(const char* const buf,
+  size_t send_body(const DoutPrefixProvider *dpp, const char* const buf,
                    const size_t len) override {
-    const auto sent = DecoratedRestfulClient<T>::send_body(buf, len);
+    const auto sent = DecoratedRestfulClient<T>::send_body(dpp, buf, len);
     lsubdout(cct, rgw, 30) << "AccountingFilter::send_body: e="
         << (enabled ? "1" : "0") << ", sent=" << sent << ", total="
         << total_sent << dendl;
@@ -172,12 +172,12 @@ public:
   size_t send_content_length(const uint64_t len) override;
   size_t send_chunked_transfer_encoding() override;
   size_t complete_header() override;
-  size_t send_body(const char* buf, size_t len) override;
+  size_t send_body(const DoutPrefixProvider *dpp, const char* buf, size_t len) override;
   size_t complete_request() override;
 };
 
 template <typename T>
-size_t BufferingFilter<T>::send_body(const char* const buf,
+size_t BufferingFilter<T>::send_body(const DoutPrefixProvider *dpp, const char* const buf,
                                      const size_t len)
 {
   if (buffer_data) {
@@ -280,7 +280,7 @@ public:
                                                   "chunked");
   }
 
-  size_t send_body(const char* buf,
+  size_t send_body(const DoutPrefixProvider *dpp, const char* buf,
                    const size_t len) override {
     if (! chunking_enabled) {
       return DecoratedRestfulClient<T>::send_body(buf, len);

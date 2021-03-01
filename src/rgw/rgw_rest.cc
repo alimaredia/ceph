@@ -661,13 +661,13 @@ void abort_early(struct req_state *s, RGWOp* op, int err_no,
   if (op != NULL) {
     int new_err_no;
     new_err_no = op->error_handler(err_no, &error_content, y);
-    ldpp_dout(s, 1) << "op->ERRORHANDLER: err_no=" << err_no
+    ldpp_dout(op, 1) << "op->ERRORHANDLER: err_no=" << err_no
 		      << " new_err_no=" << new_err_no << dendl;
     err_no = new_err_no;
   } else if (handler != NULL) {
     int new_err_no;
     new_err_no = handler->error_handler(err_no, &error_content, y);
-    ldpp_dout(s, 1) << "handler->ERRORHANDLER: err_no=" << err_no
+    ldpp_dout(op, 1) << "handler->ERRORHANDLER: err_no=" << err_no
 		      << " new_err_no=" << new_err_no << dendl;
     err_no = new_err_no;
   }
@@ -711,7 +711,7 @@ void abort_early(struct req_state *s, RGWOp* op, int err_no,
        *   x-amz-error-detail-Key: foo
        */
       end_header(s, op, NULL, error_content.size(), false, true);
-      RESTFUL_IO(s)->send_body(error_content.c_str(), error_content.size());
+      RESTFUL_IO(s)->send_body(s, error_content.c_str(), error_content.size());
     } else {
       end_header(s, op);
     }
@@ -758,7 +758,7 @@ int dump_body(struct req_state* const s,
               const size_t len)
 {
   try {
-    return RESTFUL_IO(s)->send_body(buf, len);
+    return RESTFUL_IO(s)->send_body(s, buf, len);
   } catch (rgw::io::Exception& e) {
     return -e.code().value();
   }

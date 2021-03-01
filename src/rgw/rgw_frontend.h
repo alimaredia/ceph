@@ -129,7 +129,7 @@ public:
 
   int run() override;
 
-  int process(struct mg_connection* conn);
+  int process(const DoutPrefixProvider *dpp, struct mg_connection* conn);
 
   void stop() override {
     if (ctx) {

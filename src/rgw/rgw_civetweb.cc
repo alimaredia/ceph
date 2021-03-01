@@ -13,7 +13,7 @@
 
 #define dout_subsys ceph_subsys_rgw
 
-size_t RGWCivetWeb::write_data(const char *buf, const size_t len)
+size_t RGWCivetWeb::write_data(const DoutPrefixProvider *dpp, const char *buf, const size_t len)
 {
   size_t off = 0;
   auto to_sent = len;
@@ -32,12 +32,12 @@ size_t RGWCivetWeb::write_data(const char *buf, const size_t len)
   return len;
 }
 
-RGWCivetWeb::RGWCivetWeb(mg_connection* const conn)
+RGWCivetWeb::RGWCivetWeb(const DoutPrefixProvider *dpp, mg_connection* const conn)
   : conn(conn),
     explicit_keepalive(false),
     explicit_conn_close(false),
     got_eof_on_read(false),
-    txbuf(*this)
+    txbuf(dpp, *this)
 {
     sockaddr *lsa = mg_get_local_addr(conn);
     switch(lsa->sa_family) {

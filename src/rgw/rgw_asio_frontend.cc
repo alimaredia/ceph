@@ -67,7 +67,7 @@ class StreamIO : public rgw::asio::ClientIO {
         cct(cct), stream(stream), yield(yield), buffer(buffer), request_timeout(request_timeout)
   {}
 
-  size_t write_data(const char* buf, size_t len) override {
+  size_t write_data(const DoutPrefixProvider *dpp, const char* buf, size_t len) override {
     boost::system::error_code ec;
     auto& timeout = get_lowest_layer(stream);
     if (request_timeout.count()) {
@@ -76,7 +76,7 @@ class StreamIO : public rgw::asio::ClientIO {
     auto bytes = boost::asio::async_write(stream, boost::asio::buffer(buf, len),
                                           yield[ec]);
     if (ec) {
-      ldout(cct, 4) << "write_data failed: " << ec.message() << dendl;
+      ldpp_dout(dpp, 4) << "write_data failed: " << ec.message() << dendl;
       if (ec==boost::asio::error::broken_pipe) {
         boost::system::error_code ec_ignored;
         timeout.socket().shutdown(tcp::socket::shutdown_both, ec_ignored);

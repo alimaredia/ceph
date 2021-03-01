@@ -12,13 +12,14 @@
 
 using namespace rgw::asio;
 
-ClientIO::ClientIO(parser_type& parser, bool is_ssl,
+ClientIO::ClientIO(const DoutPrefixProvider *dpp,
+                   parser_type& parser, bool is_ssl,
                    const endpoint_type& local_endpoint,
                    const endpoint_type& remote_endpoint)
   : parser(parser), is_ssl(is_ssl),
     local_endpoint(local_endpoint),
     remote_endpoint(remote_endpoint),
-    txbuf(*this)
+    txbuf(dpp, *this)
 {
 }
 

@@ -4,7 +4,7 @@
 #include "rgw_fcgi.h"
 #include "acconfig.h"
 
-size_t RGWFCGX::write_data(const char* const buf, const size_t len)
+size_t RGWFCGX::write_data(const DoutPrefixProvider *dpp, const char* const buf, const size_t len)
 {
  /* According to the documentation of FCGX_PutStr if there is no error
  * (signalised by negative return value), then always ret == len. */

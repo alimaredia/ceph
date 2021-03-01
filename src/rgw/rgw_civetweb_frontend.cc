@@ -45,18 +45,18 @@ RGWCivetWebFrontend::RGWCivetWebFrontend(RGWProcessEnv& env,
 
 }
 
-static int civetweb_callback(struct mg_connection* conn)
+static int civetweb_callback(const DoutPrefixProvider *dpp, struct mg_connection* conn)
 {
   const struct mg_request_info* const req_info = mg_get_request_info(conn);
-  return static_cast<RGWCivetWebFrontend *>(req_info->user_data)->process(conn);
+  return static_cast<RGWCivetWebFrontend *>(req_info->user_data)->process(dpp, conn);
 }
 
-int RGWCivetWebFrontend::process(struct mg_connection*  const conn)
+int RGWCivetWebFrontend::process(const DoutPrefixProvider *dpp, struct mg_connection*  const conn)
 {
   /* Hold a read lock over access to env.store for reconfiguration. */
   std::shared_lock lock{env.mutex};
 
-  RGWCivetWeb cw_client(conn);
+  RGWCivetWeb cw_client(dpp, conn);
   auto real_client_io = rgw::io::add_reordering(
                           rgw::io::add_buffering(dout_context,
                             rgw::io::add_chunking(
@@ -72,7 +72,7 @@ int RGWCivetWebFrontend::process(struct mg_connection*  const conn)
                             null_yield, scheduler.get(), nullptr, &http_ret);
   if (ret < 0) {
     /* We don't really care about return code. */
-    dout(20) << "process_request() returned " << ret << dendl;
+    ldpp_dout(dpp, 20) << "process_request() returned " << ret << dendl;
   }
 
   if (http_ret <= 0) {

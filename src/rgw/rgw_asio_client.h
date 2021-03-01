@@ -32,7 +32,7 @@ class ClientIO : public io::RestfulClient,
   rgw::io::StaticOutputBufferer<> txbuf;
 
  public:
-  ClientIO(parser_type& parser, bool is_ssl,
+  ClientIO(const DoutPrefixProvider *dpp, parser_type& parser, bool is_ssl,
            const endpoint_type& local_endpoint,
            const endpoint_type& remote_endpoint);
   ~ClientIO() override;
@@ -47,8 +47,8 @@ class ClientIO : public io::RestfulClient,
   size_t send_content_length(uint64_t len) override;
   size_t complete_header() override;
 
-  size_t send_body(const char* buf, size_t len) override {
-    return write_data(buf, len);
+  size_t send_body(const DoutPrefixProvider *dpp, const char* buf, size_t len) override {
+    return write_data(dpp, buf, len);
   }
 
   RGWEnv& get_env() noexcept override {
