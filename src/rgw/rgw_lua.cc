@@ -106,6 +106,7 @@ int write_script(const DoutPrefixProvider *dpp, rgw::sal::RGWStore* store, const
   ceph::encode(script, bl);
 
   const auto rc = store->put_system_obj(
+      dpp,
       obj.pool,
       obj.oid,
       bl,
@@ -128,6 +129,7 @@ int delete_script(const DoutPrefixProvider *dpp, rgw::sal::RGWStore* store, cons
   rgw_raw_obj obj(store->get_zone()->get_params().log_pool, script_oid(ctx, tenant));
 
   const auto rc = store->delete_system_obj(
+      dpp,
       obj.pool,
       obj.oid,
       &objv_tracker,

@@ -112,7 +112,7 @@ class UsageLogger {
   }
 public:
 
-  UsageLogger(const DoutPrefixProvider *dpp, CephContext *_cct, rgw::sal::RGWStore *_store) : dpp(_dpp), cct(_cct), store(_store), num_entries(0), timer(cct, timer_lock) {
+  UsageLogger(const DoutPrefixProvider *_dpp, CephContext *_cct, rgw::sal::RGWStore *_store) : dpp(_dpp), cct(_cct), store(_store), num_entries(0), timer(cct, timer_lock) {
     timer.init();
     std::lock_guard l{timer_lock};
     set_timer();

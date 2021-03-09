@@ -428,7 +428,7 @@ int rgw_remove_bucket_bypass_gc(rgw::sal::RGWStore *store, rgw::sal::RGWBucket* 
     return ret;
   }
 
-  bucket->sync_user_stats(y);
+  bucket->sync_user_stats(dpp, y);
   if (ret < 0) {
      ldpp_dout(dpp, 1) << "WARNING: failed sync user stats before bucket delete. ret=" <<  ret << dendl;
   }

@@ -3773,7 +3773,7 @@ void RGWPutObj::execute(const DoutPrefixProvider *dpp, optional_yield y)
   // make reservation for notification if needed
   std::unique_ptr<rgw::sal::Notification> res = store->get_notification(s->object.get(),
 						s, rgw::notify::ObjectCreatedPut);
-  op_ret = res->publish_reserve(obj_tags.get());
+  op_ret = res->publish_reserve(this, obj_tags.get());
   if (op_ret < 0) {
     return;
   }
@@ -4127,7 +4127,7 @@ void RGWPostObj::execute(const DoutPrefixProvider *dpp, optional_yield y)
 
   // make reservation for notification if needed
   std::unique_ptr<rgw::sal::Notification> res = store->get_notification(s->object.get(), s, rgw::notify::ObjectCreatedPost);
-  op_ret = res->publish_reserve();
+  op_ret = res->publish_reserve(this);
   if (op_ret < 0) {
     return;
   }
@@ -4761,7 +4761,7 @@ void RGWDeleteObj::execute(const DoutPrefixProvider *dpp, optional_yield y)
         rgw::notify::ObjectRemovedDeleteMarkerCreated : rgw::notify::ObjectRemovedDelete;
     std::unique_ptr<rgw::sal::Notification> res = store->get_notification(s->object.get(),
 									s, event_type);
-    op_ret = res->publish_reserve();
+    op_ret = res->publish_reserve(this);
     if (op_ret < 0) {
       return;
     }
@@ -5076,7 +5076,7 @@ void RGWCopyObj::execute(const DoutPrefixProvider *dpp, optional_yield y)
   // make reservation for notification if needed
   std::unique_ptr<rgw::sal::Notification> res = store->get_notification(s->object.get(),
 						s, rgw::notify::ObjectCreatedPost);
-  op_ret = res->publish_reserve();
+  op_ret = res->publish_reserve(this);
   if (op_ret < 0) {
     return;
   }
@@ -5765,7 +5765,7 @@ void RGWInitMultipart::execute(const DoutPrefixProvider *dpp, optional_yield y)
   // make reservation for notification if needed
   std::unique_ptr<rgw::sal::Notification> res = store->get_notification(s->object.get(),
 				s, rgw::notify::ObjectCreatedCompleteMultipartUpload);
-  op_ret = res->publish_reserve();
+  op_ret = res->publish_reserve(this);
   if (op_ret < 0) {
     return;
   }
@@ -5913,7 +5913,7 @@ void RGWCompleteMultipart::execute(const DoutPrefixProvider *dpp, optional_yield
   // make reservation for notification if needed
   std::unique_ptr<rgw::sal::Notification> res = store->get_notification(s->object.get(),
 				s, rgw::notify::ObjectCreatedCompleteMultipartUpload);
-  op_ret = res->publish_reserve();
+  op_ret = res->publish_reserve(this);
   if (op_ret < 0) {
     return;
   }
@@ -6496,7 +6496,7 @@ void RGWDeleteMultiObj::execute(const DoutPrefixProvider *dpp, optional_yield y)
         rgw::notify::ObjectRemovedDeleteMarkerCreated : rgw::notify::ObjectRemovedDelete;
     std::unique_ptr<rgw::sal::Notification> res = store->get_notification(obj.get(),
 									s, event_type);
-    op_ret = res->publish_reserve();
+    op_ret = res->publish_reserve(this);
     if (op_ret < 0) {
       send_partial_response(*iter, false, "", op_ret);
       continue;

@@ -643,7 +643,7 @@ int RGWUserStatsCache::sync_bucket(const rgw_user& _u, rgw_bucket& _b, optional_
     return r;
   }
 
-  r = bucket->sync_user_stats(y);
+  r = bucket->sync_user_stats(dpp, y);
   if (r < 0) {
     ldpp_dout(dpp, 0) << "ERROR: sync_user_stats() for user=" << _u << ", bucket=" << bucket << " returned " << r << dendl;
     return r;

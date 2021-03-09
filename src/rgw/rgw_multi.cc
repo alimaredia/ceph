@@ -235,7 +235,7 @@ int abort_multipart_upload(const DoutPrefixProvider *dpp,
         if (ret < 0 && ret != -ENOENT)
           return ret;
       } else {
-	chain->update(&obj_part.manifest);
+	chain->update(dpp, &obj_part.manifest);
         RGWObjManifest::obj_iterator oiter = obj_part.manifest.obj_begin(dpp);
         if (oiter != obj_part.manifest.obj_end(dpp)) {
 	  std::unique_ptr<rgw::sal::RGWObject> head = bucket->get_object(rgw_obj_key());
