@@ -278,8 +278,6 @@ int RGWBucketLifecycleConfigCR::Request::_send_request(const DoutPrefixProvider 
 template<>
 int RGWBucketGetSyncPolicyHandlerCR::Request::_send_request(const DoutPrefixProvider *dpp)
 {
-  CephContext *cct = store->ctx();
-
   int r = store->ctl()->bucket->get_sync_policy_handler(params.zone,
                                                         params.bucket,
                                                         &result->policy_handler,

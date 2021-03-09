@@ -295,7 +295,6 @@ public:
 
   int run(const DoutPrefixProvider *dpp, const std::string& bucket_id);
   int run(const DoutPrefixProvider *dpp);
-}; // class RGWRadosList
 
   // if there's a non-empty field separator, that means we'll display
   // bucket and object names
