@@ -630,7 +630,7 @@ int radosgw_Main(int argc, const char **argv)
   auto reloader = std::make_unique<RGWRealmReloader>(store,
 						     service_map_meta, &pauser);
 
-  RGWRealmWatcher realm_watcher(g_ceph_context, store->svc()->zone->get_realm());
+  RGWRealmWatcher realm_watcher(&dp, g_ceph_context, store->svc()->zone->get_realm());
   realm_watcher.add_watcher(RGWRealmNotify::Reload, *reloader);
   realm_watcher.add_watcher(RGWRealmNotify::ZonesNeedPeriod, pusher);
 

@@ -265,7 +265,7 @@ int abort_multipart_upload(const DoutPrefixProvider *dpp,
       return -ERR_NO_SUCH_UPLOAD;
     }
     //Delete objects inline if send chain to gc fails
-    store->getRados()->delete_objs_inline(chain, mp_obj.get_upload_id());
+    store->getRados()->delete_objs_inline(dpp, chain, mp_obj.get_upload_id());
   }
 
   RGWRados::Object del_target(store->getRados(), bucket_info, *obj_ctx, meta_obj);

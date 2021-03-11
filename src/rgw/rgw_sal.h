@@ -225,7 +225,7 @@ class RGWBucket {
     virtual RGWAccessControlPolicy& get_acl(void) = 0;
     virtual int set_acl(const DoutPrefixProvider *dpp, RGWAccessControlPolicy& acl, optional_yield y) = 0;
     virtual int get_bucket_info(const DoutPrefixProvider *dpp, optional_yield y) = 0;
-    virtual int get_bucket_stats(RGWBucketInfo& bucket_info, int shard_id,
+    virtual int get_bucket_stats(const DoutPrefixProvider *dpp, RGWBucketInfo& bucket_info, int shard_id,
 				 std::string *bucket_ver, std::string *master_ver,
 				 std::map<RGWObjCategory, RGWStorageStats>& stats,
 				 std::string *max_marker = nullptr,
@@ -245,7 +245,7 @@ class RGWBucket {
     virtual int check_quota(RGWQuotaInfo& user_quota, RGWQuotaInfo& bucket_quota, uint64_t obj_size, optional_yield y, bool check_size_only = false) = 0;
     virtual int set_instance_attrs(const DoutPrefixProvider *dpp, RGWAttrs& attrs, optional_yield y) = 0;
     virtual int try_refresh_info(const DoutPrefixProvider *dpp, ceph::real_time *pmtime) = 0;
-    virtual int read_usage(uint64_t start_epoch, uint64_t end_epoch, uint32_t max_entries,
+    virtual int read_usage(const DoutPrefixProvider *dpp, uint64_t start_epoch, uint64_t end_epoch, uint32_t max_entries,
 			   bool *is_truncated, RGWUsageIter& usage_iter,
 			   map<rgw_user_bucket, rgw_usage_log_entry>& usage) = 0;
 
@@ -471,7 +471,7 @@ class RGWObject {
     virtual void gen_rand_obj_instance_name() = 0;
     virtual void raw_obj_to_obj(const rgw_raw_obj& raw_obj) = 0;
     virtual void get_raw_obj(rgw_raw_obj* raw_obj) = 0;
-    virtual MPSerializer* get_serializer(const std::string& lock_name) = 0;
+    virtual MPSerializer* get_serializer(const DoutPrefixProvider *dpp, const std::string& lock_name) = 0;
     virtual int transition(RGWObjectCtx& rctx,
 			   RGWBucket* bucket,
 			   const rgw_placement_rule& placement_rule,
@@ -522,7 +522,7 @@ class RGWObject {
     virtual std::unique_ptr<WriteOp> get_write_op(RGWObjectCtx*) = 0;
 
     /* OMAP */
-    virtual int omap_get_vals_by_keys(const std::string& oid,
+    virtual int omap_get_vals_by_keys(const DoutPrefixProvider *dpp, const std::string& oid,
 			      const std::set<std::string>& keys,
 			      RGWAttrs *vals) = 0;
     virtual int omap_set_val_by_key(const DoutPrefixProvider *dpp, const std::string& key, bufferlist& val,

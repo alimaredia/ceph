@@ -274,7 +274,7 @@ void RGWOp_MDLog_Lock::execute(optional_yield y) {
     op_ret = -EINVAL;
     return;
   }
-  op_ret = meta_log.lock_exclusive(shard_id, make_timespan(dur), zone_id,
+  op_ret = meta_log.lock_exclusive(s, shard_id, make_timespan(dur), zone_id,
 				     locker_id);
   if (op_ret == -EBUSY)
     op_ret = -ERR_LOCKED;
@@ -314,7 +314,7 @@ void RGWOp_MDLog_Unlock::execute(optional_yield y) {
   }
 
   RGWMetadataLog meta_log{s->cct, store->svc()->zone, store->svc()->cls, period};
-  op_ret = meta_log.unlock(shard_id, zone_id, locker_id);
+  op_ret = meta_log.unlock(s, shard_id, zone_id, locker_id);
 }
 
 void RGWOp_MDLog_Notify::execute(optional_yield y) {
@@ -407,7 +407,7 @@ void RGWOp_BILog_List::execute(optional_yield y) {
   send_response();
   do {
     list<rgw_bi_log_entry> entries;
-    int ret = store->svc()->bilog_rados->log_list(bucket_info, shard_id,
+    int ret = store->svc()->bilog_rados->log_list(s, bucket_info, shard_id,
                                                marker, max_entries - count, 
                                                entries, &truncated);
     if (ret < 0) {
@@ -489,7 +489,7 @@ void RGWOp_BILog_Info::execute(optional_yield y) {
     }
   }
   map<RGWObjCategory, RGWStorageStats> stats;
-  int ret =  store->getRados()->get_bucket_stats(bucket_info, shard_id, &bucket_ver, &master_ver, stats, &max_marker, &syncstopped);
+  int ret =  store->getRados()->get_bucket_stats(s, bucket_info, shard_id, &bucket_ver, &master_ver, stats, &max_marker, &syncstopped);
   if (ret < 0 && ret != -ENOENT) {
     op_ret = ret;
     return;
@@ -552,7 +552,7 @@ void RGWOp_BILog_Delete::execute(optional_yield y) {
       return;
     }
   }
-  op_ret = store->svc()->bilog_rados->log_trim(bucket_info, shard_id, start_marker, end_marker);
+  op_ret = store->svc()->bilog_rados->log_trim(s, bucket_info, shard_id, start_marker, end_marker);
   if (op_ret < 0) {
     ldpp_dout(s, 5) << "ERROR: trim_bi_log_entries() " << dendl;
   }

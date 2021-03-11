@@ -136,7 +136,7 @@ class RGWRadosObject : public RGWObject {
     virtual std::unique_ptr<RGWObject> clone() {
       return std::unique_ptr<RGWObject>(new RGWRadosObject(*this));
     }
-    virtual MPSerializer* get_serializer(const std::string& lock_name) override;
+    virtual MPSerializer* get_serializer(const DoutPrefixProvider *dpp, const std::string& lock_name) override;
     virtual int transition(RGWObjectCtx& rctx,
 			   RGWBucket* bucket,
 			   const rgw_placement_rule& placement_rule,
@@ -164,7 +164,7 @@ class RGWRadosObject : public RGWObject {
     virtual std::unique_ptr<WriteOp> get_write_op(RGWObjectCtx *) override;
 
     /* OMAP */
-    virtual int omap_get_vals_by_keys(const std::string& oid,
+    virtual int omap_get_vals_by_keys(const DoutPrefixProvider *dpp, const std::string& oid,
 			      const std::set<std::string>& keys,
 			      RGWAttrs *vals) override;
     virtual int omap_set_val_by_key(const DoutPrefixProvider *dpp, const std::string& key, bufferlist& val,
@@ -232,7 +232,7 @@ class RGWRadosBucket : public RGWBucket {
     RGWAccessControlPolicy& get_acl(void) { return acls; }
     virtual int set_acl(const DoutPrefixProvider *dpp, RGWAccessControlPolicy& acl, optional_yield y) override;
     virtual int get_bucket_info(const DoutPrefixProvider *dpp, optional_yield y) override;
-    virtual int get_bucket_stats(RGWBucketInfo& bucket_info, int shard_id,
+    virtual int get_bucket_stats(const DoutPrefixProvider *dpp, RGWBucketInfo& bucket_info, int shard_id,
 				 std::string *bucket_ver, std::string *master_ver,
 				 std::map<RGWObjCategory, RGWStorageStats>& stats,
 				 std::string *max_marker = nullptr,
@@ -250,7 +250,7 @@ class RGWRadosBucket : public RGWBucket {
     virtual int check_quota(RGWQuotaInfo& user_quota, RGWQuotaInfo& bucket_quota, uint64_t obj_size, optional_yield y, bool check_size_only = false) override;
     virtual int set_instance_attrs(const DoutPrefixProvider *dpp, RGWAttrs& attrs, optional_yield y) override;
     virtual int try_refresh_info(const DoutPrefixProvider *dpp, ceph::real_time *pmtime) override;
-    virtual int read_usage(uint64_t start_epoch, uint64_t end_epoch, uint32_t max_entries,
+    virtual int read_usage(const DoutPrefixProvider *dpp, uint64_t start_epoch, uint64_t end_epoch, uint32_t max_entries,
 			   bool *is_truncated, RGWUsageIter& usage_iter,
 			   map<rgw_user_bucket, rgw_usage_log_entry>& usage) override;
     virtual std::unique_ptr<RGWBucket> clone() {
@@ -326,7 +326,7 @@ class RGWRadosStore : public RGWStore {
     virtual CephContext *ctx(void) { return rados->ctx(); }
 
 
-    int get_obj_head_ioctx(const RGWBucketInfo& bucket_info, const rgw_obj& obj,
+    int get_obj_head_ioctx(const DoutPrefixProvider *dpp, const RGWBucketInfo& bucket_info, const rgw_obj& obj,
 			   librados::IoCtx *ioctx);
 
     const std::string& get_luarocks_path() const override {
@@ -344,7 +344,7 @@ class MPRadosSerializer : public MPSerializer {
   librados::ObjectWriteOperation op;
 
 public:
-  MPRadosSerializer(RGWRadosStore* store, RGWRadosObject* obj, const std::string& lock_name);
+  MPRadosSerializer(const DoutPrefixProvider *dpp, RGWRadosStore* store, RGWRadosObject* obj, const std::string& lock_name);
 
   virtual int try_lock(const DoutPrefixProvider *dpp, utime_t dur, optional_yield y) override;
   int unlock() {

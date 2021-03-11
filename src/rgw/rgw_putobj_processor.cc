@@ -77,7 +77,7 @@ static int process_completed(const AioResultList& completed, RawObjSet *written)
 int RadosWriter::set_stripe_obj(const rgw_raw_obj& raw_obj)
 {
   stripe_obj = store->svc()->rados->obj(raw_obj);
-  return stripe_obj.open();
+  return stripe_obj.open(dpp);
 }
 
 int RadosWriter::process(bufferlist&& bl, uint64_t offset)

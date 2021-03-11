@@ -2187,7 +2187,7 @@ int RGWUser::info(RGWUserInfo& fetched_info, std::string *err_msg)
   return 0;
 }
 
-int RGWUser::list(RGWUserAdminOpState& op_state, RGWFormatterFlusher& flusher)
+int RGWUser::list(const DoutPrefixProvider *dpp, RGWUserAdminOpState& op_state, RGWFormatterFlusher& flusher)
 {
   Formatter *formatter = flusher.get_formatter();
   void *handle = nullptr;
@@ -2198,7 +2198,7 @@ int RGWUser::list(RGWUserAdminOpState& op_state, RGWFormatterFlusher& flusher)
 
   auto meta_mgr = store->ctl()->meta.mgr;
 
-  int ret = meta_mgr->list_keys_init(metadata_key, op_state.marker, &handle);
+  int ret = meta_mgr->list_keys_init(dpp, metadata_key, op_state.marker, &handle);
   if (ret < 0) {
     return ret;
   }
@@ -2244,7 +2244,7 @@ int RGWUser::list(RGWUserAdminOpState& op_state, RGWFormatterFlusher& flusher)
   return 0;
 }
 
-int RGWUserAdminOp_User::list(rgw::sal::RGWRadosStore *store, RGWUserAdminOpState& op_state,
+int RGWUserAdminOp_User::list(const DoutPrefixProvider *dpp, rgw::sal::RGWRadosStore *store, RGWUserAdminOpState& op_state,
                   RGWFormatterFlusher& flusher)
 {
   RGWUser user;
@@ -2253,7 +2253,7 @@ int RGWUserAdminOp_User::list(rgw::sal::RGWRadosStore *store, RGWUserAdminOpStat
   if (ret < 0)
     return ret;
 
-  ret = user.list(op_state, flusher);
+  ret = user.list(dpp, op_state, flusher);
   if (ret < 0)
     return ret;
 
@@ -2976,10 +2976,10 @@ int RGWUserCtl::read_stats(const DoutPrefixProvider *dpp,
   });
 }
 
-int RGWUserCtl::read_stats_async(const rgw_user& user, RGWGetUserStats_CB *cb)
+int RGWUserCtl::read_stats_async(const DoutPrefixProvider *dpp, const rgw_user& user, RGWGetUserStats_CB *cb)
 {
   return be_handler->call([&](RGWSI_MetaBackend_Handler::Op *op) {
-    return svc.user->read_stats_async(op->ctx(), user, cb);
+    return svc.user->read_stats_async(dpp, op->ctx(), user, cb);
   });
 }
 

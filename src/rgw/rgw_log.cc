@@ -342,12 +342,12 @@ int rgw_log_op(RGWRados *store, RGWREST* const rest, struct req_state *s,
     return 0;
 
   if (s->bucket_name.empty()) {
-    ldout(s->cct, 5) << "nothing to log for operation" << dendl;
+    ldpp_dout(s, 5) << "nothing to log for operation" << dendl;
     return -EINVAL;
   }
   if (s->err.ret == -ERR_NO_SUCH_BUCKET || rgw::sal::RGWBucket::empty(s->bucket.get())) {
     if (!s->cct->_conf->rgw_log_nonexistent_bucket) {
-      ldout(s->cct, 5) << "bucket " << s->bucket_name << " doesn't exist, not logging" << dendl;
+      ldpp_dout(s, 5) << "bucket " << s->bucket_name << " doesn't exist, not logging" << dendl;
       return 0;
     }
     bucket_id = "";
@@ -357,7 +357,7 @@ int rgw_log_op(RGWRados *store, RGWREST* const rest, struct req_state *s,
   entry.bucket = rgw_make_bucket_entry_name(s->bucket_tenant, s->bucket_name);
 
   if (check_utf8(entry.bucket.c_str(), entry.bucket.size()) != 0) {
-    ldout(s->cct, 5) << "not logging op on bucket with non-utf8 name" << dendl;
+    ldpp_dout(s, 5) << "not logging op on bucket with non-utf8 name" << dendl;
     return 0;
   }
 
@@ -466,13 +466,13 @@ int rgw_log_op(RGWRados *store, RGWREST* const rest, struct req_state *s,
 
     rgw_raw_obj obj(store->svc.zone->get_zone_params().log_pool, oid);
 
-    ret = store->append_async(obj, bl.length(), bl);
+    ret = store->append_async(s, obj, bl.length(), bl);
     if (ret == -ENOENT) {
-      ret = store->create_pool(store->svc.zone->get_zone_params().log_pool);
+      ret = store->create_pool(s, store->svc.zone->get_zone_params().log_pool);
       if (ret < 0)
         goto done;
       // retry
-      ret = store->append_async(obj, bl.length(), bl);
+      ret = store->append_async(s, obj, bl.length(), bl);
     }
   }
 
@@ -481,7 +481,7 @@ int rgw_log_op(RGWRados *store, RGWREST* const rest, struct req_state *s,
   }
 done:
   if (ret < 0)
-    ldout(s->cct, 0) << "ERROR: failed to log entry" << dendl;
+    ldpp_dout(s, 0) << "ERROR: failed to log entry" << dendl;
 
   return ret;
 }

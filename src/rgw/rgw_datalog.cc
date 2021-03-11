@@ -73,7 +73,7 @@ int RGWDataChangesBE::remove(const DoutPrefixProvider *dpp,
 {
   auto num_shards = cct->_conf->rgw_data_log_num_shards;
   librados::IoCtx ioctx;
-  auto r = rgw_init_ioctx(rados, log_pool.name, ioctx,
+  auto r = rgw_init_ioctx(dpp, rados, log_pool.name, ioctx,
 			  false, false);
   if (r < 0) {
     if (r == -ENOENT) {
@@ -271,7 +271,7 @@ public:
     : RGWDataChangesBE(cct) {
     librados::IoCtx ioctx;
     auto shards = cct->_conf->rgw_data_log_num_shards;
-    auto r = rgw_init_ioctx(rados, log_pool.name, ioctx,
+    auto r = rgw_init_ioctx(dpp, rados, log_pool.name, ioctx,
 			    true, false);
     if (r < 0) {
       throw bs::system_error(ceph::to_error_code(r));
@@ -295,7 +295,7 @@ public:
 		    const rgw_pool& log_pool, bool* exists, bool* has_entries) {
     auto num_shards = cct->_conf->rgw_data_log_num_shards;
     librados::IoCtx ioctx;
-    auto r = rgw_init_ioctx(rados, log_pool.name, ioctx,
+    auto r = rgw_init_ioctx(dpp, rados, log_pool.name, ioctx,
 			    false, false);
     if (r < 0) {
       if (r == -ENOENT) {

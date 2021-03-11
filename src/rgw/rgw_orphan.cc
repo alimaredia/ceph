@@ -146,10 +146,10 @@ int RGWOrphanStore::list_jobs(map <string,RGWOrphanSearchState>& job_list)
   return 0;
 }
 
-int RGWOrphanStore::init()
+int RGWOrphanStore::init(const DoutPrefixProvider *dpp)
 {
   const rgw_pool& log_pool = store->svc()->zone->get_zone_params().log_pool;
-  int r = rgw_init_ioctx(store->getRados()->get_rados_handle(), log_pool, ioctx);
+  int r = rgw_init_ioctx(dpp, store->getRados()->get_rados_handle(), log_pool, ioctx);
   if (r < 0) {
     cerr << "ERROR: failed to open log pool (" << log_pool << " ret=" << r << std::endl;
     return r;
@@ -188,9 +188,9 @@ int RGWOrphanStore::read_entries(const string& oid, const string& marker, map<st
   return 0;
 }
 
-int RGWOrphanSearch::init(const string& job_name, RGWOrphanSearchInfo *info, bool _detailed_mode)
+int RGWOrphanSearch::init(const DoutPrefixProvider *dpp, const string& job_name, RGWOrphanSearchInfo *info, bool _detailed_mode)
 {
-  int r = orphan_store.init();
+  int r = orphan_store.init(dpp);
   if (r < 0) {
     return r;
   }
@@ -204,7 +204,7 @@ int RGWOrphanSearch::init(const string& job_name, RGWOrphanSearchInfo *info, boo
   RGWOrphanSearchState state;
   r = orphan_store.read_job(job_name, state);
   if (r < 0 && r != -ENOENT) {
-    lderr(store->ctx()) << "ERROR: failed to read state ret=" << r << dendl;
+    ldpp_dout(dpp, -1) << "ERROR: failed to read state ret=" << r << dendl;
     return r;
   }
 
@@ -220,11 +220,11 @@ int RGWOrphanSearch::init(const string& job_name, RGWOrphanSearchInfo *info, boo
 
     r = save_state();
     if (r < 0) {
-      lderr(store->ctx()) << "ERROR: failed to write state ret=" << r << dendl;
+      ldpp_dout(dpp, -1) << "ERROR: failed to write state ret=" << r << dendl;
       return r;
     }
   } else {
-      lderr(store->ctx()) << "ERROR: job not found" << dendl;
+      ldpp_dout(dpp, -1) << "ERROR: job not found" << dendl;
       return r;
   }
 
@@ -295,7 +295,7 @@ int RGWOrphanSearch::build_all_oids_index(const DoutPrefixProvider *dpp)
 {
   librados::IoCtx ioctx;
 
-  int ret = rgw_init_ioctx(store->getRados()->get_rados_handle(), search_info.pool, ioctx);
+  int ret = rgw_init_ioctx(dpp, store->getRados()->get_rados_handle(), search_info.pool, ioctx);
   if (ret < 0) {
     ldpp_dout(dpp, -1) << __func__ << ": rgw_init_ioctx() returned ret=" << ret << dendl;
     return ret;
@@ -374,7 +374,7 @@ int RGWOrphanSearch::build_buckets_instance_index(const DoutPrefixProvider *dpp)
   void *handle;
   int max = 1000;
   string section = "bucket.instance";
-  int ret = store->ctl()->meta.mgr->list_keys_init(section, &handle);
+  int ret = store->ctl()->meta.mgr->list_keys_init(dpp, section, &handle);
   if (ret < 0) {
     ldpp_dout(dpp, -1) << "ERROR: can't get key: " << cpp_strerror(-ret) << dendl;
     return ret;
@@ -586,7 +586,7 @@ int RGWOrphanSearch::build_linked_oids_for_bucket(const DoutPrefixProvider *dpp,
       RGWRados::Object::Stat& op = stat_ops.back();
 
 
-      ret = op.stat_async();
+      ret = op.stat_async(dpp);
       if (ret < 0) {
         ldpp_dout(dpp, -1) << "ERROR: stat_async() returned error: " << cpp_strerror(-ret) << dendl;
         return ret;
@@ -731,7 +731,7 @@ int OMAPReader::get_next(string *key, bufferlist *pbl, bool *done)
   return get_next(key, pbl, done);
 }
 
-int RGWOrphanSearch::compare_oid_indexes()
+int RGWOrphanSearch::compare_oid_indexes(const DoutPrefixProvider *dpp)
 {
   ceph_assert(linked_objs_index.size() == all_objs_index.size());
 
@@ -739,9 +739,9 @@ int RGWOrphanSearch::compare_oid_indexes()
 
   librados::IoCtx data_ioctx;
 
-  int ret = rgw_init_ioctx(store->getRados()->get_rados_handle(), search_info.pool, data_ioctx);
+  int ret = rgw_init_ioctx(dpp, store->getRados()->get_rados_handle(), search_info.pool, data_ioctx);
   if (ret < 0) {
-    lderr(store->ctx()) << __func__ << ": rgw_init_ioctx() returned ret=" << ret << dendl;
+    ldpp_dout(dpp, -1) << __func__ << ": rgw_init_ioctx() returned ret=" << ret << dendl;
     return ret;
   }
 
@@ -780,7 +780,7 @@ int RGWOrphanSearch::compare_oid_indexes()
       }
 
       if (cur_linked == key_fp) {
-        ldout(store->ctx(), 20) << "linked: " << key << dendl;
+        ldpp_dout(dpp, 20) << "linked: " << key << dendl;
         continue;
       }
 
@@ -788,15 +788,15 @@ int RGWOrphanSearch::compare_oid_indexes()
       r = data_ioctx.stat(key, NULL, &mtime);
       if (r < 0) {
         if (r != -ENOENT) {
-          lderr(store->ctx()) << "ERROR: ioctx.stat(" << key << ") returned ret=" << r << dendl;
+          ldpp_dout(dpp, -1) << "ERROR: ioctx.stat(" << key << ") returned ret=" << r << dendl;
         }
         continue;
       }
       if (stale_secs && (uint64_t)mtime >= time_threshold) {
-        ldout(store->ctx(), 20) << "skipping: " << key << " (mtime=" << mtime << " threshold=" << time_threshold << ")" << dendl;
+        ldpp_dout(dpp, 20) << "skipping: " << key << " (mtime=" << mtime << " threshold=" << time_threshold << ")" << dendl;
         continue;
       }
-      ldout(store->ctx(), 20) << "leaked: " << key << dendl;
+      ldpp_dout(dpp, 20) << "leaked: " << key << dendl;
       cout << "leaked: " << key << std::endl;
     } while (!done);
   }
@@ -815,7 +815,7 @@ int RGWOrphanSearch::run(const DoutPrefixProvider *dpp)
       search_stage = RGWOrphanSearchStage(ORPHAN_SEARCH_STAGE_LSPOOL);
       r = save_state();
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
         return r;
       }
       // fall through
@@ -823,14 +823,14 @@ int RGWOrphanSearch::run(const DoutPrefixProvider *dpp)
       ldpp_dout(dpp, 0) << __func__ << "(): building index of all objects in pool" << dendl;
       r = build_all_oids_index(dpp);
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
         return r;
       }
 
       search_stage = RGWOrphanSearchStage(ORPHAN_SEARCH_STAGE_LSBUCKETS);
       r = save_state();
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
         return r;
       }
       // fall through
@@ -839,39 +839,39 @@ int RGWOrphanSearch::run(const DoutPrefixProvider *dpp)
       ldpp_dout(dpp, 0) << __func__ << "(): building index of all bucket indexes" << dendl;
       r = build_buckets_instance_index(dpp);
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
         return r;
       }
 
       search_stage = RGWOrphanSearchStage(ORPHAN_SEARCH_STAGE_ITERATE_BI);
       r = save_state();
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
         return r;
       }
       // fall through
 
 
     case ORPHAN_SEARCH_STAGE_ITERATE_BI:
-      ldout(store->ctx(), 0) << __func__ << "(): building index of all linked objects" << dendl;
+      ldpp_dout(dpp, 0) << __func__ << "(): building index of all linked objects" << dendl;
       r = build_linked_oids_index(dpp);
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
         return r;
       }
 
       search_stage = RGWOrphanSearchStage(ORPHAN_SEARCH_STAGE_COMPARE);
       r = save_state();
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: failed to save state, ret=" << r << dendl;
         return r;
       }
       // fall through
 
     case ORPHAN_SEARCH_STAGE_COMPARE:
-      r = compare_oid_indexes();
+      r = compare_oid_indexes(dpp);
       if (r < 0) {
-        lderr(store->ctx()) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
+        ldpp_dout(dpp, -1) << __func__ << ": ERROR: build_all_objs_index returned ret=" << r << dendl;
         return r;
       }
 
@@ -1257,7 +1257,7 @@ int RGWRadosList::process_bucket(
 	  stat_ops.push_back(RGWRados::Object::Stat(&op_target));
 	  RGWRados::Object::Stat& op = stat_ops.back();
 
-	  ret = op.stat_async();
+	  ret = op.stat_async(dpp);
 	  if (ret < 0) {
 	    ldpp_dout(dpp, -1) << "ERROR: stat_async() returned error: " <<
 	      cpp_strerror(-ret) << dendl;
@@ -1325,9 +1325,9 @@ int RGWRadosList::run(const DoutPrefixProvider *dpp)
   int ret;
   void* handle = nullptr;
 
-  ret = store->ctl()->meta.mgr->list_keys_init("bucket", &handle);
+  ret = store->ctl()->meta.mgr->list_keys_init(dpp, "bucket", &handle);
   if (ret < 0) {
-    lderr(store->ctx()) << "RGWRadosList::" << __func__ <<
+    ldpp_dout(dpp, -1) << "RGWRadosList::" << __func__ <<
       " ERROR: list_keys_init returned " <<
       cpp_strerror(-ret) << dendl;
     return ret;
