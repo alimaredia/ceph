@@ -78,3 +78,9 @@
 	path = src/libkmip
 	url = https://github.com/ceph/libkmip
 	branch = ceph-master
+[submodule "src/cpp_redis"]
+	path = src/cpp_redis
+	url = git://github.com/cpp-redis/cpp_redis.git
+[submodule "src/cpp_redis/tacopie"]
+        path = src/cpp_redis/tacopie
+        url = https://github.com/cylix/tacopie.git

@@ -284,6 +284,8 @@ if(WITH_CEPHFS_JAVA)
   add_subdirectory(java)
 endif()
 
+add_subdirectory(cpp_redis)
+
 # sort out which allocator to use
 if(ALLOCATOR STREQUAL "tcmalloc")
   set(ALLOC_LIBS gperftools::tcmalloc)
