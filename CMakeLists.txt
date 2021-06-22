@@ -169,18 +169,6 @@ if(WITH_XFS)
   set(HAVE_LIBXFS ${XFS_FOUND})
 endif()
 
-option(WITH_CPP_REDIS "CPP_REDIS is here" ON)
-if(WITH_CPP_REDIS)
-  find_package(cpp_redis)
-  set(HAVE_LIBCPP_REDIS ${CPP_REDIS_FOUND})
-endif()
-
-option(WITH_TACOPIE "TACOPIE is here" ON)
-if(WITH_TACOPIE)
-  find_package(tacopie)
-  set(HAVE_LIBTACOPIE ${TACOPIE_FOUND})
-endif()
-
 option(WITH_ZFS "enable LibZFS if found" OFF)
 if(WITH_ZFS)
   find_package(zfs)
@@ -356,9 +344,9 @@ if(WITH_BLKIN)
 endif(WITH_BLKIN)
 
 option(WITH_BOOST_CONTEXT "Enable boost::asio stackful coroutines" ON)
-#if(WITH_BOOST_CONTEXT)
+if(WITH_BOOST_CONTEXT)
 set(HAVE_BOOST_CONTEXT ON)
-#endif()
+endif()
 
 #option for RGW
 option(WITH_RADOSGW "Rados Gateway is enabled" ON)
