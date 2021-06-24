@@ -166,6 +166,10 @@ add_library(rgw_common OBJECT ${librgw_common_srcs})
 target_include_directories(rgw_common SYSTEM PUBLIC "services")
 target_include_directories(rgw_common PUBLIC "${CMAKE_SOURCE_DIR}/src/dmclock/support/src")
 target_include_directories(rgw_common PUBLIC "${CMAKE_SOURCE_DIR}/src/fmt/include")
+if(WITH_CPP_REDIS)
+  target_include_directories(rgw_common PUBLIC "${CMAKE_SOURCE_DIR}/src/cpp_redis/includes")
+  target_include_directories(rgw_common PUBLIC "${CMAKE_SOURCE_DIR}/src/cpp_redis/tacopie/includes")
+endif()
 
 if(WITH_BOOST_CONTEXT)
   target_include_directories(rgw_common PRIVATE
@@ -224,6 +228,11 @@ add_dependencies(rgw_a civetweb_h)
 target_compile_definitions(rgw_a PUBLIC "-DCLS_CLIENT_HIDE_IOCTX")
 target_include_directories(rgw_a PUBLIC "${CMAKE_SOURCE_DIR}/src/dmclock/support/src")
 target_include_directories(rgw_a SYSTEM PUBLIC "../rapidjson/include")
+
+if(WITH_CPP_REDIS)
+  target_include_directories(rgw_a PUBLIC "${CMAKE_SOURCE_DIR}/src/cpp_redis/includes")
+  target_include_directories(rgw_a PUBLIC "${CMAKE_SOURCE_DIR}/src/cpp_redis/tacopie/includes")
+endif()
 
 if(WITH_RADOSGW_AMQP_ENDPOINT)
   find_package(RabbitMQ REQUIRED)
@@ -330,7 +339,13 @@ target_link_libraries(radosgw-admin ${rgw_libs} librados
   cls_log_client cls_timeindex_client
   cls_version_client cls_user_client
   global ${FCGI_LIBRARY} ${LIB_RESOLV}
-  ${CURL_LIBRARIES} ${EXPAT_LIBRARIES} ${BLKID_LIBRARIES} cpp_redis)
+  ${CURL_LIBRARIES} ${EXPAT_LIBRARIES} ${BLKID_LIBRARIES})
+
+if(WITH_CPP_REDIS)
+  add_dependencies(radosgw-admin cpp_redis)
+  target_link_libraries(radosgw-admin cpp_redis)
+endif()
+
 install(TARGETS radosgw-admin DESTINATION bin)
 
 set(radosgw_es_srcs
