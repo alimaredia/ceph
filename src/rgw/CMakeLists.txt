@@ -330,6 +330,11 @@ target_link_libraries(radosgwd radosgw librados
 set_target_properties(radosgwd PROPERTIES OUTPUT_NAME radosgw)
 install(TARGETS radosgwd DESTINATION bin)
 
+if(WITH_CPP_REDIS)
+  add_dependencies(radosgwd cpp_redis)
+  target_link_libraries(radosgwd cpp_redis)
+endif()
+
 set(radosgw_admin_srcs
   rgw_admin.cc
   rgw_orphan.cc)
@@ -399,6 +404,7 @@ target_link_libraries(rgw
   ${EXPAT_LIBRARIES}
   PUBLIC
   dmclock::dmclock)
+
 
 if(WITH_RADOSGW_AMQP_ENDPOINT)
   target_link_libraries(rgw PRIVATE RabbitMQ::RabbitMQ)

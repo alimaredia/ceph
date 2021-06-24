@@ -678,6 +678,10 @@ if(WITH_LIBCEPHFS)
   add_library(cephfs ${CEPH_SHARED} ${libcephfs_srcs})
   target_link_libraries(cephfs PRIVATE client ceph-common
     ${CRYPTO_LIBS} ${EXTRALIBS})
+  if(WITH_CPP_REDIS)
+    target_include_directories(cephfs PUBLIC "${CMAKE_SOURCE_DIR}/src/cpp_redis/includes")
+    target_include_directories(cephfs PUBLIC "${CMAKE_SOURCE_DIR}/src/cpp_redis/tacopie/includes")
+  endif()
 if(WITH_BOOST_CONTEXT)
     target_include_directories(cephfs PRIVATE
       $<TARGET_PROPERTY:spawn,INTERFACE_INCLUDE_DIRECTORIES>)
