@@ -1,5 +1,5 @@
 tasks:
 - s3tests:
     client.0:
-      force-branch: wip-ssl-verify-fix
+      force-branch: ceph-master-new
       rgw_server: client.0
