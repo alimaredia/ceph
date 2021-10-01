@@ -20,6 +20,9 @@ if [ -r /etc/os-release ]; then
           if [ "$VERSION_ID" -ge "32" ] ; then
               PYBUILD="3.8"
           fi
+          if [ "$VERSION_ID" -ge "33" ] ; then
+              PYBUILD="3.9"
+          fi
           ;;
       rhel|centos)
           MAJOR_VER=$(echo "$VERSION_ID" | sed -e 's/\..*$//')

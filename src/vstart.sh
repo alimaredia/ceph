@@ -126,7 +126,7 @@ fi
 [ -z "$CEPH_DIR" ] && CEPH_DIR="$PWD"
 [ -z "$CEPH_DEV_DIR" ] && CEPH_DEV_DIR="$CEPH_DIR/dev"
 [ -z "$CEPH_OUT_DIR" ] && CEPH_OUT_DIR="$CEPH_DIR/out"
-[ -z "$CEPH_RGW_PORT" ] && CEPH_RGW_PORT=8000
+[ -z "$CEPH_RGW_PORT" ] && CEPH_RGW_PORT=8001
 [ -z "$CEPH_CONF_PATH" ] && CEPH_CONF_PATH=$CEPH_DIR
 
 if [ $CEPH_NUM_OSD -gt 3 ]; then
@@ -533,6 +533,15 @@ do_rgw_conf() {
 [client.rgw.${current_port}]
         rgw frontends = $rgw_frontend port=${current_port}
         admin socket = ${CEPH_OUT_DIR}/radosgw.${current_port}.asok
+        rgw_datacache_enabled = true
+        rgw_cache_size = 1000000
+        rgw_datacache_path = /tmp/
+        remote_cache_list = localhost:8000
+        rgw_directory_address = localhost
+        rgw_directory_address2 = localhost
+        rgw_directory_address3 = localhost
+        rgw_directory_port = 6379
+        aging_internval_in_minutes = 100000
 EOF
         current_port=$((current_port + 1))
 done
