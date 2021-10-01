@@ -537,7 +537,7 @@ do_rgw_conf() {
         rgw_cache_size = 1000000
         rgw_datacache_path = /tmp/
         remote_cache_list = localhost:8000
-        rgw_directory_address = localhost
+        rgw_directory_address1 = localhost
         rgw_directory_address2 = localhost
         rgw_directory_address3 = localhost
         rgw_directory_port = 6379
@@ -1176,15 +1176,15 @@ EOF
 
 if [ "$debug" -eq 0 ]; then
     CMONDEBUG='
-        debug mon = 10
+        debug mon = 1
         debug ms = 1'
 else
     debug echo "** going verbose **"
     CMONDEBUG='
-        debug mon = 20
-        debug paxos = 20
-        debug auth = 20
-        debug mgrc = 20
+        debug mon = 1
+        debug paxos = 1
+        debug auth = 1
+        debug mgrc = 1
         debug ms = 1'
 fi
 
@@ -1299,30 +1299,30 @@ EOF
         cat <<EOF | $CEPH_BIN/ceph -c $conf_fn config assimilate-conf -i -
 [mgr]
 debug_ms = 1
-debug_mgr = 20
-debug_monc = 20
-debug_mon = 20
+debug_mgr = 1
+debug_monc = 1
+debug_mon = 1
 
 [osd]
 debug_ms = 1
-debug_osd = 25
-debug_objecter = 20
-debug_monc = 20
-debug_mgrc = 20
-debug_journal = 20
-debug_filestore = 20
-debug_bluestore = 20
-debug_bluefs = 20
-debug_rocksdb = 20
-debug_bdev = 20
-debug_reserver = 10
-debug_objclass = 20
+debug_osd = 1
+debug_objecter = 1
+debug_monc = 1
+debug_mgrc = 1
+debug_journal = 1
+debug_filestore = 1
+debug_bluestore = 1
+debug_bluefs = 1
+debug_rocksdb = 1
+debug_bdev = 1
+debug_reserver = 1
+debug_objclass = 1
 
 [mds]
 debug_ms = 1
-debug_mds = 20
-debug_monc = 20
-debug_mgrc = 20
+debug_mds = 1
+debug_monc = 1
+debug_mgrc = 1
 mds_debug_scatterstat = true
 mds_verify_scatter = true
 EOF

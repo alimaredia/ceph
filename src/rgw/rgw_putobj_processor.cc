@@ -322,17 +322,19 @@ int AtomicObjectProcessor::complete(size_t accounted_size,
   if (r < 0) {
     return r;
   }
+  ldpp_dout(dpp, 1) << "ugur1 " << dendl;
   if (!obj_op.meta.canceled) {
     // on success, clear the set of objects for deletion
     writer.clear_written();
     
+    ldpp_dout(dpp, 1) << "ugur2 " << dendl;
     /* datacache */
     if( store->ctx()->_conf->rgw_datacache_enabled){
     cache_obj cacheObj;
     cacheObj.owner =  op_target.get_bucket_info().owner.id;
     cacheObj.bucket_name = op_target.get_obj().bucket.name;
     cacheObj.obj_name = op_target.get_obj().key.name;
-//    ldpp_dout(dpp, 1) << "ugur "<< cacheObj.bucket_name<<" " << cacheObj.obj_name << dendl;
+    ldpp_dout(dpp, 1) << "ugur "<< cacheObj.bucket_name<<" " << cacheObj.obj_name << dendl;
     cacheObj.hosts_list.push_back("writecache");
     cacheObj.home_location = CACHE;
     cacheObj.size_in_bytes = manifest.get_obj_size();

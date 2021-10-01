@@ -9291,7 +9291,7 @@ int RGWRados::get_cache_obj_iterate_cb(cache_block& c_block, off_t obj_ofs, off_
   // read block from local ssd cache
   if (datacache->get(oid)){
     d->add_pending_block(oid, c_block);
-    dout(10) << __func__   << "HIT local read cache, key:" << oid<< dendl; 
+    dout(10) << __func__   << " HIT local read cache, key:" << oid<< dendl; 
     rgw_pool pool("default.rgw.buckets.data");
     rgw_raw_obj read_obj1(pool,oid);
     auto obj = d->store->svc.rados->obj(read_obj1);
@@ -9302,7 +9302,7 @@ int RGWRados::get_cache_obj_iterate_cb(cache_block& c_block, off_t obj_ofs, off_
   } else {
 	ret = blkDirectory->getValue(&c_block);
 	if (ret == 0) { // read from remote cache
-	  dout(10) << __func__   << "HIT remote cache, key:" << oid<< dendl; 
+	  dout(10) << __func__   << " HIT remote cache, key:" << oid<< dendl; 
 	  rgw_user user_id(c_block.c_obj.owner);
 	  string dest= "http://" + c_block.hosts_list[0];
 	  rgw_bucket bucket;
@@ -9321,7 +9321,7 @@ int RGWRados::get_cache_obj_iterate_cb(cache_block& c_block, off_t obj_ofs, off_
          return d->flush(std::move(completed));
 		
 	} else if(c_block.c_obj.home_location == 0) { // read from write-back cache
-	  dout(10) << __func__   << "HIT write cache, key:" << oid<< dendl; 
+	  dout(10) << __func__   << " HIT write cache, key:" << oid<< dendl; 
 	  c_block.access_count = 0;
 	  rgw_raw_obj read_obj;
 	  d->add_pending_block(oid, c_block);

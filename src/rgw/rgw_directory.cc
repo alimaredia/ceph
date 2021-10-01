@@ -181,15 +181,19 @@ string timeToString(time_t time)
 void RGWObjectDirectory::findClient(string key, cpp_redis::client *client){
   int slot = 0;
   slot = hash_slot(key.c_str(), key.size());
-  if (slot < 5461)
+  if (slot < 5461) {
     client->connect(cct->_conf->rgw_directory_address1, cct->_conf->rgw_directory_port);
+    ldout(cct,1) << "rgw_directory_address1: " << cct->_conf->rgw_directory_address1 << dendl;
   //client = &client1;
-  else if (slot < 10923)
+  } else if (slot < 10923) {
     client->connect(cct->_conf->rgw_directory_address2, cct->_conf->rgw_directory_port);
+    ldout(cct,1) << "rgw_directory_address2: " << cct->_conf->rgw_directory_address2 << dendl;
   //client = &client2;
-  else
+  } else {
     client->connect(cct->_conf->rgw_directory_address3, cct->_conf->rgw_directory_port);
+    ldout(cct,1) << "rgw_directory_address3: " << cct->_conf->rgw_directory_address3 << dendl;
   //client = &client3;
+  }
 }
 
 //void RGWBlockDirectory::findClient(string key){
@@ -382,6 +386,7 @@ int RGWObjectDirectory::setValue(cache_obj *ptr){
   multimap<string, string> timeKey;
   vector<string> options;
   string hosts;
+  ldout(cct,1) <<__func__<< " was executed" << dendl;
 
   stringstream ss;
   for(size_t i = 0; i < ptr->hosts_list.size(); ++i)
@@ -424,15 +429,18 @@ int RGWObjectDirectory::setValue(cache_obj *ptr){
 
   // synchronous commit, no timeout
   client.sync_commit();
+  ldout(cct,1) << "ugur: sync_commit was run" << dendl;
 
   //this will be used for aging policy
   //clientzadd("keyObjectDirectory", options, timeKey, [](cpp_redis::reply &reply){
   //});
-  if (result.find("OK") != std::string::npos)
+  if (result.find("OK") != std::string::npos) {
+        ldout(cct,1) << "ugur: result.find was run" << dendl;
 	return 0;
-  else
+  } else {
+        ldout(cct,1) << "ugur: result.find was not run" << dendl;
 	return -1;
-
+  }
 }
 
 
@@ -443,7 +451,8 @@ int RGWBlockDirectory::setValue(cache_block *ptr){
   cpp_redis::client client;
   string result;
 
-  ldout(cct,10) <<__func__<<" key " << key <<dendl;
+  ldout(cct,1) <<__func__<< " was executed" << dendl;
+  ldout(cct,1) <<__func__<<" key " << key <<dendl;
 
   vector<pair<string, string>> list;
   vector<string> options;
@@ -475,7 +484,7 @@ int RGWBlockDirectory::setValue(cache_block *ptr){
 
   // synchronous commit, no timeout
   client.sync_commit();
-//  ldout(cct,10) <<__func__<<" we set key " << key <<dendl;
+  ldout(cct,1) <<__func__<<" we set key " << key <<dendl;
   if (result.find("OK") != std::string::npos)
 	return 0;
   else
