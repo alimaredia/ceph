@@ -3998,6 +3998,7 @@ void RGWPutObj::execute()
   }
 
   tracepoint(rgw_op, processor_complete_enter, s->req_id.c_str());
+  ldpp_dout(this, 1) << "QUOTA LOGGING: RGWPutObj::execute: processor->complete being run" << dendl;
   op_ret = processor->complete(s->obj_size, etag, &mtime, real_time(), attrs,
                                (delete_at ? *delete_at : real_time()), if_match, if_nomatch,
                                (user_data.empty() ? nullptr : &user_data), nullptr, nullptr);

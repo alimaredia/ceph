@@ -250,26 +250,38 @@ public:
   }
 
   bool update(RGWQuotaCacheStats * const entry) override {
+    dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: before function is run added_bytes is "
+     << added_bytes << " removed_bytes is " << removed_bytes << " objs_delta is " << objs_delta << dendl;
+    dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: before function is run entry->stats.size is " 
+      << entry->stats.size << " entry->stats.size_rounded is " << entry->stats.size_rounded << " entry->stats.num_objs is " << entry->stats.num_objects << dendl;
     const uint64_t rounded_added = rgw_rounded_objsize(added_bytes);
     const uint64_t rounded_removed = rgw_rounded_objsize(removed_bytes);
+    dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: rounded_added is " << rounded_added << dendl;
+    dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: rounded_removed is " << rounded_removed << dendl;
 
     if (((int64_t)(entry->stats.size + added_bytes - removed_bytes)) >= 0) {
+      dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: entry->stats.size + added - removed >= 0" << dendl;
       entry->stats.size += added_bytes - removed_bytes;
     } else {
       entry->stats.size = 0;
     }
 
     if (((int64_t)(entry->stats.size_rounded + rounded_added - rounded_removed)) >= 0) {
+      dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: entry->stats.size_rounded + rounded_added - rounded_removed >= 0" << dendl;
       entry->stats.size_rounded += rounded_added - rounded_removed;
     } else {
       entry->stats.size_rounded = 0;
     }
 
     if (((int64_t)(entry->stats.num_objects + objs_delta)) >= 0) {
+      dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: entry->stats.num_objs + objs_delta >= 0" << dendl;
       entry->stats.num_objects += objs_delta;
     } else {
       entry->stats.num_objects = 0;
     }
+
+    dout(1) << "QUOTA LOGGING: RGWQuotaStatsUpdate::update: after function is run entry->stats.size is " 
+      << entry->stats.size << " entry->stats.size_rounded is " << entry->stats.size_rounded << " entry->stats.num_objs is " << entry->stats.num_objects << dendl;
 
     return true;
   }
@@ -280,8 +292,10 @@ template<class T>
 void RGWQuotaCache<T>::adjust_stats(const rgw_user& user, rgw_bucket& bucket, int objs_delta,
                                  uint64_t added_bytes, uint64_t removed_bytes)
 {
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache<T>::adjust_stats: before map_find_and_update objs_delta is " << objs_delta << " added_bytes is " << added_bytes << " removed_bytes is " << removed_bytes << dendl;
   RGWQuotaStatsUpdate<T> update(objs_delta, added_bytes, removed_bytes);
   map_find_and_update(user, bucket, &update);
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache<T>::adjust_stats: before map_find_and_update objs_delta is " << objs_delta << " added_bytes is " << added_bytes << " removed_bytes is " << removed_bytes << dendl;
 
   data_modified(user, bucket);
 }
@@ -373,6 +387,7 @@ public:
 
 int RGWBucketStatsCache::fetch_stats_from_storage(const rgw_user& user, const rgw_bucket& bucket, RGWStorageStats& stats)
 {
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWBucketStatsCache::fetch_stats_from_storage" << dendl;
   RGWBucketInfo bucket_info;
 
   RGWSysObjectCtx obj_ctx = store->svc.sysobj->init_obj_ctx();
@@ -639,6 +654,7 @@ int RGWUserStatsCache::fetch_stats_from_storage(const rgw_user& user, const rgw_
 
 int RGWUserStatsCache::sync_bucket(const rgw_user& user, rgw_bucket& bucket)
 {
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWUserStatsCache::sync_bucket" << dendl;
   RGWBucketInfo bucket_info;
 
   RGWSysObjectCtx obj_ctx = store->svc.sysobj->init_obj_ctx();
@@ -660,6 +676,7 @@ int RGWUserStatsCache::sync_bucket(const rgw_user& user, rgw_bucket& bucket)
 
 int RGWUserStatsCache::sync_user(const rgw_user& user)
 {
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWUserStatsCache::sync_user" << dendl;
   cls_user_header header;
   string user_str = user.to_str();
   int ret = store->cls_user_get_header(user_str, &header);
@@ -691,6 +708,7 @@ int RGWUserStatsCache::sync_user(const rgw_user& user)
 
 int RGWUserStatsCache::sync_all_users()
 {
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWUserStatsCache::sync_all_users" << dendl;
   string key = "user";
   void *handle;
 
@@ -738,6 +756,7 @@ void RGWUserStatsCache::data_modified(const rgw_user& user, rgw_bucket& bucket)
   bool need_update = modified_buckets.find(bucket) == modified_buckets.end();
   rwlock.unlock();
 
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWUserStatsCache::data_modified: need_update is " << need_update << dendl;
   if (need_update) {
     rwlock.get_write();
     modified_buckets[bucket] = user;
@@ -995,6 +1014,7 @@ public:
   }
 
   void update_stats(const rgw_user& user, rgw_bucket& bucket, int obj_delta, uint64_t added_bytes, uint64_t removed_bytes) override {
+    ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaHandlerImpl::update_stats: obj_delta is " << obj_delta << " added_bytes is " << added_bytes << " removed_bytes is " << removed_bytes << dendl;
     bucket_stats_cache.adjust_stats(user, bucket, obj_delta, added_bytes, removed_bytes);
     user_stats_cache.adjust_stats(user, bucket, obj_delta, added_bytes, removed_bytes);
   }

@@ -49,6 +49,7 @@ void rgw_get_anon_user(RGWUserInfo& info)
 int rgw_user_sync_all_stats(RGWRados *store, const rgw_user& user_id)
 {
   CephContext *cct = store->ctx();
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: rgw_user_sync_all_stats" << dendl;
   size_t max_entries = cct->_conf->rgw_list_buckets_max_chunk;
   bool is_truncated = false;
   string marker;
@@ -83,6 +84,7 @@ int rgw_user_sync_all_stats(RGWRados *store, const rgw_user& user_id)
         ldout(cct, 0) << "ERROR: could not sync bucket stats: ret=" << ret << dendl;
         return ret;
       }
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: rgw_user_sync_all_stats: finished rgw_bucket_sync_user_stats" << dendl;
       RGWQuotaInfo bucket_quota;
       ret = store->check_bucket_shards(bucket_info, bucket_info.bucket, bucket_quota);
       if (ret < 0) {
@@ -96,6 +98,7 @@ int rgw_user_sync_all_stats(RGWRados *store, const rgw_user& user_id)
     cerr << "ERROR: failed to complete syncing user stats: ret=" << ret << std::endl;
     return ret;
   }
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: rgw_user_sync_all_stats: finished complete_user_sync_stats" << dendl;
 
   return 0;
 }

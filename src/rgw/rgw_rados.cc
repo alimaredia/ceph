@@ -3805,10 +3805,12 @@ int RGWRados::Object::Write::_do_write_meta(uint64_t size, uint64_t accounted_si
   if (meta.completeMultipart){
   	store->quota_handler->update_stats(meta.owner, obj.bucket, (orig_exists ? 0 : 1),
                                      0, orig_size);
+        ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWRados::Object::Write::_do_write_meta in meta.completeMultipart" << dendl;
   }
   else {
     store->quota_handler->update_stats(meta.owner, obj.bucket, (orig_exists ? 0 : 1),
                                      accounted_size, orig_size);  
+    ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWRados::Object::Write::_do_write_meta not in meta.completeMultipart" << dendl;
   }
   return 0;
 

@@ -315,6 +315,7 @@ int AtomicObjectProcessor::complete(size_t accounted_size,
   obj_op.meta.zones_trace = zones_trace;
   obj_op.meta.modify_tail = true;
 
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: MultipartObjectProcessor::complete: actual_size is " << actual_size << " accounted_size is " << accounted_size << dendl;
   r = obj_op.write_meta(actual_size, accounted_size, attrs);
   if (r < 0) {
     return r;
@@ -438,6 +439,7 @@ int MultipartObjectProcessor::complete(size_t accounted_size,
   obj_op.meta.zones_trace = zones_trace;
   obj_op.meta.modify_tail = true;
 
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: MultipartObjectProcessor::complete: actual_size is " << actual_size << " accounted_size is " << accounted_size << dendl;
   r = obj_op.write_meta(actual_size, accounted_size, attrs);
   if (r < 0)
     return r;
@@ -651,6 +653,7 @@ int AppendObjectProcessor::complete(size_t accounted_size, const string &etag, c
     etag_bl.append(final_etag_str, strlen(final_etag_str) + 1);
     attrs[RGW_ATTR_ETAG] = etag_bl;
   }
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: AppendObjectProcessor::complete: actual_size is " << actual_size << " cur_size is " << cur_size << " accounted_size is " << accounted_size << " *cur_accounted_size is " << *cur_accounted_size << dendl;
   r = obj_op.write_meta(actual_size + cur_size, accounted_size + *cur_accounted_size, attrs);
   if (r < 0) {
     return r;
