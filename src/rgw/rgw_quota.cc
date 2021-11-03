@@ -196,9 +196,13 @@ void RGWQuotaCache<T>::set_stats(const rgw_user& user, const rgw_bucket& bucket,
 
 template<class T>
 int RGWQuotaCache<T>::get_stats(const rgw_user& user, const rgw_bucket& bucket, RGWStorageStats& stats, RGWQuotaInfo& quota) {
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats" << dendl;
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: stats.size before map_find conditional:" << stats.size << dendl;
   RGWQuotaCacheStats qs;
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: qs.stats.size before map_find:" << qs.stats.size << dendl;
   utime_t now = ceph_clock_now();
   if (map_find(user, bucket, qs)) {
+    ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: qs.stats.size after map_find:" << qs.stats.size << dendl;
     if (qs.async_refresh_time.sec() > 0 && now >= qs.async_refresh_time) {
       int r = async_refresh(user, bucket, qs);
       if (r < 0) {
@@ -206,20 +210,26 @@ int RGWQuotaCache<T>::get_stats(const rgw_user& user, const rgw_bucket& bucket, 
 
         /* continue processing, might be a transient error, async refresh is just optimization */
       }
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: qs.stats.size after async_refresh:" << qs.stats.size << dendl;
     }
 
     if (can_use_cached_stats(quota, qs.stats) && qs.expiration >
 	ceph_clock_now()) {
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: stats.size before qs update:" << stats.size << dendl;
       stats = qs.stats;
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: stats.size after qs update:" << stats.size << dendl;
       return 0;
     }
   }
 
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: stats.size before fetch_stats_from_storage:" << stats.size << dendl;
   int ret = fetch_stats_from_storage(user, bucket, stats);
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: stats.size after fetch_stats_from_storage:" << stats.size << dendl;
   if (ret < 0 && ret != -ENOENT)
     return ret;
 
   set_stats(user, bucket, qs, stats);
+  ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaCache::get_stats: stats.size after set_stats:" << stats.size << dendl;
 
   return 0;
 }
@@ -615,11 +625,14 @@ public:
 
 int RGWUserStatsCache::fetch_stats_from_storage(const rgw_user& user, const rgw_bucket& bucket, RGWStorageStats& stats)
 {
+  ldout(store->ctx(), 0) << "QUOTA LOGGING: RGWUserStatsCache::fetch_stats_from_storage" << dendl;
+  ldout(store->ctx(), 0) << "QUOTA LOGGING: RGWUserStatsCache::fetch_stats_from_storage stats before RGWRados::get_user_stats:" << stats.size << dendl;
   int r = store->get_user_stats(user, stats);
   if (r < 0) {
     ldout(store->ctx(), 0) << "could not get user stats for user=" << user << dendl;
     return r;
   }
+  ldout(store->ctx(), 0) << "QUOTA LOGGING: RGWUserStatsCache::fetch_stats_from_storage stats after RGWRados::get_user_stats:" << stats.size << dendl;
 
   return 0;
 }
@@ -791,16 +804,23 @@ bool RGWQuotaInfoDefApplier::is_size_exceeded(const char * const entity,
     /* The limit is not enabled. */
     return false;
   }
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoDefApplier::is_size_exceeded: max_size < 0" << dendl;
 
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoDefApplier::is_size_exceeded: obj_size is: " << size << dendl;
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoDefApplier::is_size_exceeded: stats.size is: " << stats.size << dendl;
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoDefApplier::is_size_exceeded: stats.size_rounded is: " << stats.size_rounded << dendl;
   const uint64_t cur_size = stats.size_rounded;
   const uint64_t new_size = rgw_rounded_objsize(size);
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoDefApplier::is_size_exceeded: cur_size is: " << cur_size << ", new_size is: " << new_size << dendl;
 
   if (cur_size + new_size > static_cast<uint64_t>(qinfo.max_size)) {
-    dout(10) << "quota exceeded: stats.size_rounded=" << stats.size_rounded
+    dout(10) << "QUOTA LOGGING: RGWQuotaInfoDefApplier::is_size_exceeded: quota exceeded: stats.size_rounded=" << stats.size_rounded
              << " size=" << new_size << " "
              << entity << "_quota.max_size=" << qinfo.max_size << dendl;
     return true;
   }
+
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoDefApplier::is_size_exceeded: quota not exceeded returning false" << dendl;
 
   return false;
 }
@@ -816,7 +836,7 @@ bool RGWQuotaInfoDefApplier::is_num_objs_exceeded(const char * const entity,
   }
 
   if (stats.num_objects + num_objs > static_cast<uint64_t>(qinfo.max_objects)) {
-    dout(10) << "quota exceeded: stats.num_objects=" << stats.num_objects
+    dout(10) << "QUOTA LOGGING: quota exceeded: stats.num_objects=" << stats.num_objects
              << " " << entity << "_quota.max_objects=" << qinfo.max_objects
              << dendl;
     return true;
@@ -831,14 +851,17 @@ bool RGWQuotaInfoRawApplier::is_size_exceeded(const char * const entity,
                                               const uint64_t size) const
 {
   if (qinfo.max_size < 0) {
+    dout(10) << "QUOTA LOGGING: RGWQuotaInfoRawApplier::is_size_exceeded: max_size < 0" << dendl;
     /* The limit is not enabled. */
     return false;
   }
 
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoRawApplier::is_size_exceeded: obj_size is: " << size << dendl;
   const uint64_t cur_size = stats.size;
+  dout(10) << "QUOTA LOGGING: RGWQuotaInfoRawApplier::is_size_exceeded: cur_size is: " << cur_size << dendl;
 
   if (cur_size + size > static_cast<uint64_t>(qinfo.max_size)) {
-    dout(10) << "quota exceeded: stats.size=" << stats.size
+    dout(10) << "QUOTA LOGGING: RGWQuotaInfoRawApplier::is_size_exceeded: quota exceeded: stats.size=" << stats.size
              << " size=" << size << " "
              << entity << "_quota.max_size=" << qinfo.max_size << dendl;
     return true;
@@ -897,8 +920,8 @@ class RGWQuotaHandlerImpl : public RGWQuotaHandler {
 
     const auto& quota_applier = RGWQuotaInfoApplier::get_instance(quota);
 
-    ldout(store->ctx(), 20) << entity
-                            << " quota: max_objects=" << quota.max_objects
+    ldout(store->ctx(), 1) << entity
+                            << " QUOTA LOGGING: quota: max_objects=" << quota.max_objects
                             << " max_size=" << quota.max_size << dendl;
 
 
@@ -907,10 +930,11 @@ class RGWQuotaHandlerImpl : public RGWQuotaHandler {
     }
 
     if (quota_applier.is_size_exceeded(entity, quota, stats, size)) {
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: size exceeded" << dendl;
       return -ERR_QUOTA_EXCEEDED;
     }
 
-    ldout(store->ctx(), 20) << entity << " quota OK:"
+    ldout(store->ctx(), 1) << entity << " QUOTA LOGGING: quota OK:"
                             << " stats.num_objects=" << stats.num_objects
                             << " stats.size=" << stats.size << dendl;
     return 0;
@@ -930,6 +954,8 @@ public:
     if (!bucket_quota.enabled && !user_quota.enabled) {
       return 0;
     }
+    ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaHandlerImpl::check_quota: user_quota max size is:" << user_quota.max_size << dendl;
+    ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaHandlerImpl::check_quota" << dendl;
 
     /*
      * we need to fetch bucket stats if the user quota is enabled, because
@@ -953,7 +979,10 @@ public:
 
     if (user_quota.enabled) {
       RGWStorageStats user_stats;
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaHandlerImpl::check_quota: user_stats initialized" << dendl;
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaHandlerImpl::check_quota: user_stats.size before get_stats:" << user_stats.size << dendl;
       int ret = user_stats_cache.get_stats(user, bucket, user_stats, user_quota);
+      ldout(store->ctx(), 1) << "QUOTA LOGGING: RGWQuotaHandlerImpl::check_quota: user_stats.size after get_stats:" << user_stats.size << dendl;
       if (ret < 0) {
         return ret;
       }

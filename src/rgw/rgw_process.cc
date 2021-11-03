@@ -116,7 +116,7 @@ int rgw_process_authenticated(RGWHandler_REST * const handler,
     return ret;
   }
 
-  ldpp_dout(op, 2) << "init op" << dendl;
+  ldpp_dout(op, 2) << "QUOTA LOGGING: init op" << dendl;
   ret = op->init_processing();
   if (ret < 0) {
     return ret;

@@ -152,6 +152,7 @@ public:
 
   virtual int init_processing() {
     if (dialect_handler->supports_quota()) {
+      ldpp_dout(this, 1) << "QUOTA LOGGING: init_processing" << dendl;
       op_ret = init_quota();
       if (op_ret < 0)
         return op_ret;

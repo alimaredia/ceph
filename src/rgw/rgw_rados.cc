@@ -10067,6 +10067,7 @@ int RGWRados::check_quota(const rgw_user& bucket_owner, rgw_bucket& bucket,
                           RGWQuotaInfo& user_quota, RGWQuotaInfo& bucket_quota, uint64_t obj_size, bool check_size_only)
 {
   // if we only check size, then num_objs will set to 0
+    ldout(cct, 1) << "QUOTA LOGGING: RGWRados::check_quota: user_quota max size is:" << user_quota.max_size << dendl;
   if(check_size_only)
     return quota_handler->check_quota(bucket_owner, bucket, user_quota, bucket_quota, 0, obj_size);
 

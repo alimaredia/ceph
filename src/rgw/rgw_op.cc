@@ -1191,10 +1191,12 @@ int RGWOp::do_aws4_auth_completion()
 
 int RGWOp::init_quota()
 {
+  ldpp_dout(this, 1) << "QUOTA LOGGING: init_quota" << dendl;
   /* no quota enforcement for system requests */
   if (s->system_request)
     return 0;
 
+  ldpp_dout(this, 1) << "QUOTA LOGGING: init_quota: not a system_request" << dendl;
   /* init quota related stuff */
   if (!(s->user->op_mask & RGW_OP_TYPE_MODIFY)) {
     return 0;
@@ -1227,8 +1229,10 @@ int RGWOp::init_quota()
 
   if (uinfo->user_quota.enabled) {
     user_quota = uinfo->user_quota;
+    ldpp_dout(this, 1) << "QUOTA LOGGING: init_quota: user_quota was enabled, max size:" << user_quota.max_size << dendl;
   } else {
     user_quota = store->svc.quota->get_user_quota();
+    ldpp_dout(this, 1) << "QUOTA LOGGING: init_quota: user_quota was not enabled, max size:" << user_quota.max_size << dendl;
   }
 
   return 0;
@@ -3699,6 +3703,7 @@ void RGWPutObj::execute()
 
   if (!chunked_upload) { /* with chunked upload we don't know how big is the upload.
                             we also check sizes at the end anyway */
+    ldpp_dout(this, 1) << "QUOTA LOGGING: RGWPutObj::execute: user_quota max size is:" << user_quota.max_size << dendl;
     op_ret = store->check_quota(s->bucket_owner.get_id(), s->bucket,
 				user_quota, bucket_quota, s->content_length);
     if (op_ret < 0) {
