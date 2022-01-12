@@ -15,6 +15,7 @@ overrides:
       use-vault-role: client.0
   s3tests:
     with-sse-s3: true
+    force-branch: sse-s3-testing
 
 tasks:
 - vault:
