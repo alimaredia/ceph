@@ -1,5 +1,6 @@
 tasks:
 - s3tests:
     client.0:
-      force-branch: ceph-master
       rgw_server: client.0
+      force-branch: sse-s3-5
+      git_remote: https://github.com/mdw-at-linuxbox/
