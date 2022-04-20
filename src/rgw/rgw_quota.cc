@@ -167,6 +167,7 @@ void RGWQuotaCache<T>::set_stats(const rgw_user& user, const rgw_bucket& bucket,
 
 template<class T>
 int RGWQuotaCache<T>::get_stats(const rgw_user& user, const rgw_bucket& bucket, RGWStorageStats& stats, optional_yield y, const DoutPrefixProvider* dpp) {
+  ldpp_dout(dpp, 0) << "QUOTA LOGGING: entering quota cache to get stats" << dendl;
   RGWQuotaCacheStats qs;
   utime_t now = ceph_clock_now();
   if (map_find(user, bucket, qs)) {
@@ -766,6 +767,7 @@ bool RGWQuotaInfoDefApplier::is_size_exceeded(const DoutPrefixProvider *dpp,
 {
   if (qinfo.max_size < 0) {
     /* The limit is not enabled. */
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING: is_size_exceeded: max size limit not enabled" << dendl;
     return false;
   }
 
@@ -773,7 +775,7 @@ bool RGWQuotaInfoDefApplier::is_size_exceeded(const DoutPrefixProvider *dpp,
   const uint64_t new_size = rgw_rounded_objsize(size);
 
   if (cur_size + new_size > static_cast<uint64_t>(qinfo.max_size)) {
-    ldpp_dout(dpp, 10) << "quota exceeded: stats.size_rounded=" << stats.size_rounded
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING: quota exceeded: stats.size_rounded=" << stats.size_rounded
              << " size=" << new_size << " "
              << entity << "_quota.max_size=" << qinfo.max_size << dendl;
     return true;
@@ -790,11 +792,12 @@ bool RGWQuotaInfoDefApplier::is_num_objs_exceeded(const DoutPrefixProvider *dpp,
 {
   if (qinfo.max_objects < 0) {
     /* The limit is not enabled. */
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING: is_num_objs_exceeded: max objects limit not enabled" << dendl;
     return false;
   }
 
   if (stats.num_objects + num_objs > static_cast<uint64_t>(qinfo.max_objects)) {
-    ldpp_dout(dpp, 10) << "quota exceeded: stats.num_objects=" << stats.num_objects
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING: quota exceeded: stats.num_objects=" << stats.num_objects
              << " " << entity << "_quota.max_objects=" << qinfo.max_objects
              << dendl;
     return true;
@@ -810,6 +813,7 @@ bool RGWQuotaInfoRawApplier::is_size_exceeded(const DoutPrefixProvider *dpp,
                                               const uint64_t size) const
 {
   if (qinfo.max_size < 0) {
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING: is_size_exceeded: max size limit not enabled" << dendl;
     /* The limit is not enabled. */
     return false;
   }
@@ -817,7 +821,7 @@ bool RGWQuotaInfoRawApplier::is_size_exceeded(const DoutPrefixProvider *dpp,
   const uint64_t cur_size = stats.size;
 
   if (cur_size + size > static_cast<uint64_t>(qinfo.max_size)) {
-    ldpp_dout(dpp, 10) << "quota exceeded: stats.size=" << stats.size
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING quota exceeded: stats.size=" << stats.size
              << " size=" << size << " "
              << entity << "_quota.max_size=" << qinfo.max_size << dendl;
     return true;
@@ -834,11 +838,12 @@ bool RGWQuotaInfoRawApplier::is_num_objs_exceeded(const DoutPrefixProvider *dpp,
 {
   if (qinfo.max_objects < 0) {
     /* The limit is not enabled. */
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING: is_num_objs_exceeded: max objects limit not enabled" << dendl;
     return false;
   }
 
   if (stats.num_objects + num_objs > static_cast<uint64_t>(qinfo.max_objects)) {
-    ldpp_dout(dpp, 10) << "quota exceeded: stats.num_objects=" << stats.num_objects
+    ldpp_dout(dpp, 10) << "QUOTA OP LOGGING: quota exceeded: stats.num_objects=" << stats.num_objects
              << " " << entity << "_quota.max_objects=" << qinfo.max_objects
              << dendl;
     return true;
@@ -875,11 +880,12 @@ class RGWQuotaHandlerImpl : public RGWQuotaHandler {
     if (!quota.enabled) {
       return 0;
     }
+    ldpp_dout(dpp, 1) << "QUOTA OP LOGGING #9: check_quota() #2" << dendl;
 
     const auto& quota_applier = RGWQuotaInfoApplier::get_instance(quota);
 
-    ldpp_dout(dpp, 20) << entity
-                            << " quota: max_objects=" << quota.max_objects
+    ldpp_dout(dpp, 20) << "QUOTA OP LOGGING: " << entity
+                            << "quota: max_objects=" << quota.max_objects
                             << " max_size=" << quota.max_size << dendl;
 
 
@@ -891,7 +897,7 @@ class RGWQuotaHandlerImpl : public RGWQuotaHandler {
       return -ERR_QUOTA_EXCEEDED;
     }
 
-    ldpp_dout(dpp, 20) << entity << " quota OK:"
+    ldpp_dout(dpp, 20) << entity << "QUOTA OP LOGGING: quota OK:"
                             << " stats.num_objects=" << stats.num_objects
                             << " stats.size=" << stats.size << dendl;
     return 0;
@@ -912,6 +918,7 @@ public:
     if (!bucket_quota.enabled && !user_quota.enabled) {
       return 0;
     }
+    ldpp_dout(dpp, 1) << "QUOTA OP LOGGING #6: rgw_quota.cc:check_quota()" << dendl;
 
     /*
      * we need to fetch bucket stats if the user quota is enabled, because
@@ -927,6 +934,7 @@ public:
       if (ret < 0) {
         return ret;
       }
+      ldpp_dout(dpp, 1) << "QUOTA OP LOGGING #7: bucket stats cache get done, checking bucket quota" << dendl;
       ret = check_quota(dpp, "bucket", bucket_quota, bucket_stats, num_objs, size);
       if (ret < 0) {
         return ret;
@@ -939,6 +947,7 @@ public:
       if (ret < 0) {
         return ret;
       }
+      ldpp_dout(dpp, 1) << "QUOTA OP LOGGING #8: user stats cache get done, checking user quota" << dendl;
       ret = check_quota(dpp, "user", user_quota, user_stats, num_objs, size);
       if (ret < 0) {
         return ret;

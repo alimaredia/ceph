@@ -1340,6 +1340,7 @@ int RGWOp::do_aws4_auth_completion()
 
 int RGWOp::init_quota()
 {
+  ldpp_dout(this, 1) << "QUOTA OP LOGGING #2: init_quota" << dendl;
   /* no quota enforcement for system requests */
   if (s->system_request)
     return 0;
@@ -1371,12 +1372,15 @@ int RGWOp::init_quota()
 
   if (s->bucket->get_info().quota.enabled) {
     bucket_quota = s->bucket->get_info().quota;
+    ldpp_dout(this, 1) << "QUOTA OP LOGGING #3: init_quota: bucket quota max size is: " << bucket_quota.max_size << " max objects is: " << bucket_quota.max_objects << dendl;
   } else if (user->get_info().bucket_quota.enabled) {
     bucket_quota = user->get_info().bucket_quota;
+    ldpp_dout(this, 1) << "QUOTA OP LOGGING #3: init_quota: bucket quota max size is: " << bucket_quota.max_size << " max objects is: " << bucket_quota.max_objects << dendl;
   }
 
   if (user->get_info().user_quota.enabled) {
     user_quota = user->get_info().user_quota;
+    ldpp_dout(this, 1) << "QUOTA OP LOGGING #4: init_quota: user quota max size is: " << user_quota.max_size << " max objects is: " << user_quota.max_objects << dendl;
   }
 
   return 0;
@@ -3901,9 +3905,11 @@ void RGWPutObj::execute(optional_yield y)
 
   if (!chunked_upload) { /* with chunked upload we don't know how big is the upload.
                             we also check sizes at the end anyway */
+    ldpp_dout(this, 1) << "QUOTA OP LOGGING #5: put_obj::execute()" << dendl;
     op_ret = s->bucket->check_quota(this, user_quota, bucket_quota, s->content_length, y);
     if (op_ret < 0) {
       ldpp_dout(this, 20) << "check_quota() returned ret=" << op_ret << dendl;
+      ldpp_dout(this, 1) << "QUOTA OP LOGGING: QUOTA EXCEEDED" << dendl;
       return;
     }
   }
@@ -4124,9 +4130,10 @@ void RGWPutObj::execute(optional_yield y)
     return;
   }
 
+  ldpp_dout(this, 1) << "QUOTA OP LOGGING: put_obj::execute() #2" << dendl;
   op_ret = s->bucket->check_quota(this, user_quota, bucket_quota, s->obj_size, y);
   if (op_ret < 0) {
-    ldpp_dout(this, 20) << "second check_quota() returned op_ret=" << op_ret << dendl;
+    ldpp_dout(this, 20) << "QUOTA OP LOGGING: second check_quota() returned op_ret=" << op_ret << dendl;
     return;
   }
 

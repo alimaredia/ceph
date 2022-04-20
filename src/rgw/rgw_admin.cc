@@ -1345,6 +1345,7 @@ bool set_ratelimit_info(RGWRateLimitInfo& ratelimit, OPT opt_cmd, int64_t max_re
 void set_quota_info(RGWQuotaInfo& quota, OPT opt_cmd, int64_t max_size, int64_t max_objects,
                     bool have_max_size, bool have_max_objects)
 {
+  ldpp_dout(dpp(), -1) << "QUOTA SETTING LOGGING #2: in set_quota_info function" << dendl;
   switch (opt_cmd) {
     case OPT::QUOTA_ENABLE:
     case OPT::GLOBAL_QUOTA_ENABLE:
@@ -1383,6 +1384,7 @@ int set_bucket_quota(rgw::sal::Store* store, OPT opt_cmd,
                      int64_t max_size, int64_t max_objects,
                      bool have_max_size, bool have_max_objects)
 {
+  ldpp_dout(dpp(), -1) << "QUOTA SETTING LOGGING: in set_bucket_quota function" << dendl;
   std::unique_ptr<rgw::sal::Bucket> bucket;
   int r = store->get_bucket(dpp(), nullptr, tenant_name, bucket_name, &bucket, null_yield);
   if (r < 0) {
@@ -1538,6 +1540,7 @@ int show_bucket_ratelimit(rgw::sal::Store* store, const string& tenant_name,
 int set_user_bucket_quota(OPT opt_cmd, RGWUser& user, RGWUserAdminOpState& op_state, int64_t max_size, int64_t max_objects,
                           bool have_max_size, bool have_max_objects)
 {
+  ldpp_dout(dpp(), -1) << "QUOTA SETTING LOGGING: in set_user_bucket_quota function" << dendl;
   RGWUserInfo& user_info = op_state.get_user_info();
 
   set_quota_info(user_info.bucket_quota, opt_cmd, max_size, max_objects, have_max_size, have_max_objects);
@@ -1556,6 +1559,7 @@ int set_user_bucket_quota(OPT opt_cmd, RGWUser& user, RGWUserAdminOpState& op_st
 int set_user_quota(OPT opt_cmd, RGWUser& user, RGWUserAdminOpState& op_state, int64_t max_size, int64_t max_objects,
                    bool have_max_size, bool have_max_objects)
 {
+  ldpp_dout(dpp(), -1) << "QUOTA SETTING LOGGING: in set user quota function" << dendl;
   RGWUserInfo& user_info = op_state.get_user_info();
 
   set_quota_info(user_info.user_quota, opt_cmd, max_size, max_objects, have_max_size, have_max_objects);
