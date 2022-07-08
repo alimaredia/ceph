@@ -12,5 +12,5 @@ tasks:
       force-branch: master
       dbstore_tests: True
       rgw_server: client.0
-      extra_attrs: ["!fails_on_rgw,!fails_on_dbstore"]
+      extra_attrs: ["!fails_on_rgw,!fails_on_dbstore,!test_of_iam"]
 
