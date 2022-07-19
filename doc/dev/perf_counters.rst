@@ -200,3 +200,56 @@ The actual dump is similar to the schema, except that average values are grouped
    }
  }
 
+Labeled Perf Counters
+---------------------
+
+A Ceph daemon has the ability to emit a set perf counter instances with varying labels. These counters are intended for visualizing specific metrics in 3rd party tools like the Prometheus and Grafana.
+
+For example, the below counters for the RGW show put and get byte statistics for different users on different buckets::
+
+  {
+    "rgw": {
+        "labels": {
+            "Bucket: "bkt1",
+            "User: "user1",
+        },
+        "put_b": 1048576,
+        "put_initial_lat": {
+            "avgcount": 1,
+            "sum": 0.013000200,
+            "avgtime": 0.013000200
+        }
+    },
+    "rgw": {
+        "labels": {
+            "Bucket: "bkt2",
+            "User: "user1",
+        },
+        "put_b": 1048576,
+        "put_initial_lat": {
+            "avgcount": 1,
+            "sum": 0.016000246,
+            "avgtime": 0.016000246
+        }
+    },
+    "rgw": {
+        "labels": {
+            "Bucket: "bkt1",
+            "User: "user2",
+        },
+        "get_b": 1048576,
+        "get_initial_lat": {
+            "avgcount": 1,
+            "sum": 0.003000046,
+            "avgtime": 0.003000046
+        },
+        "put_b": 1048576,
+        "put_initial_lat": {
+            "avgcount": 1,
+            "sum": 0.014000215,
+            "avgtime": 0.014000215
+        }
+    }
+  }
+
+Labeled perf counters can be viewed with ``ceph {daemon id} perf dump labeled`` and all labeled counter's schema can be viewed with ``ceph {daemon id} perf schema labeled``.
