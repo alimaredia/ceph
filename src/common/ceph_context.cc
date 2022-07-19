@@ -538,11 +538,19 @@ int CephContext::_do_command(
     std::string counter;
     cmd_getval(cmdmap, "logger", logger);
     cmd_getval(cmdmap, "counter", counter);
-    _perf_counters_collection->dump_formatted(f, false, logger, counter);
+    _perf_counters_collection->dump_formatted(f, false, false, logger, counter);
   }
   else if (command == "perfcounters_schema" || command == "2" ||
     command == "perf schema") {
     _perf_counters_collection->dump_formatted(f, true);
+  }
+  else if (command == "perfcounters_schema_labeled" || command == "3" ||
+      command == "perf schema labeled") {
+    _perf_counters_collection->dump_formatted(f, true, true);
+  }
+  else if (command == "perfcounters_dump_labeled" || command == "4" ||
+      command == "perf dump labeled") {
+    _perf_counters_collection->dump_formatted(f, false, true);
   }
   else if (command == "perf histogram dump") {
     std::string logger;
@@ -750,6 +758,10 @@ CephContext::CephContext(uint32_t module_type_,
   _admin_socket->register_command("perf histogram dump name=logger,type=CephString,req=false name=counter,type=CephString,req=false", _admin_hook, "dump perf histogram values");
   _admin_socket->register_command("2", _admin_hook, "");
   _admin_socket->register_command("perf schema", _admin_hook, "dump perfcounters schema");
+  _admin_socket->register_command("perf dump labeled", _admin_hook, "dump labeled perfcounters and their values");
+  _admin_socket->register_command("perf schema labeled", _admin_hook, "dump labeled perfcounters schema");
+  _admin_socket->register_command("3", _admin_hook, "");
+  _admin_socket->register_command("4", _admin_hook, "");
   _admin_socket->register_command("perf histogram schema", _admin_hook, "dump perf histogram schema");
   _admin_socket->register_command("perf reset name=var,type=CephString", _admin_hook, "perf reset <name>: perf reset all or one perfcounter name");
   _admin_socket->register_command("config show", _admin_hook, "dump current config settings");
