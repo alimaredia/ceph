@@ -166,7 +166,7 @@ else
     objectstore="bluestore"
 fi
 ceph_osd=ceph-osd
-rgw_frontend="beast"
+rgw_frontend="beast prefix=/swift"
 rgw_compression=""
 lockdep=${LOCKDEP:-1}
 spdk_enabled=0 # disable SPDK by default
@@ -680,6 +680,17 @@ do_rgw_conf() {
         rgw frontends = $rgw_frontend port=${current_port}${flight_conf:+,arrow_flight}
         admin socket = ${CEPH_OUT_DIR}/radosgw.${current_port}.asok
         debug rgw_flight = 20
+        rgw keystone accepted admin roles = admin
+        rgw keystone accepted roles = admin,Member
+        rgw keystone admin domain = Default
+        rgw keystone admin password = ADMIN
+        rgw keystone admin project = admin
+        rgw keystone admin user = admin
+        rgw keystone api version = 3
+        rgw keystone implicit tenants = true
+        rgw swift account in url = true
+        rgw swift enforce content length = true
+        rgw swift versioning enabled = true
 EOF
         current_port=$((current_port + 1))
         unset flight_conf
@@ -1783,6 +1794,7 @@ do_rgw()
             --admin-socket=${CEPH_OUT_DIR}/radosgw.${current_port}.asok \
             --pid-file=${CEPH_OUT_DIR}/radosgw.${current_port}.pid \
             --rgw_luarocks_location=${CEPH_OUT_DIR}/luarocks \
+            --rgw_keystone_url=http://localhost:5000 \
             ${RGWDEBUG} \
             -n ${rgw_name} \
             "--rgw_frontends=${rgw_frontend} port=${current_port}${CEPH_RGW_HTTPS}${flight_conf:+,arrow_flight}"
