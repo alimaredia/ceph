@@ -76,6 +76,7 @@ class PerfCountersCache {
         ceph_assert(cache[removed_label]->counters);
         cct->get_perfcounters_collection()->remove(cache[removed_label]->counters);
         //delete cache[removed_label]->counters;
+        delete cache[removed_label]->counters;
         cache[removed_label]->counters = NULL;
 
         delete cache[removed_label]->pos;
@@ -236,7 +237,7 @@ int main() {
   p.get(label, l_rgw_put_b);
 
   p.add_label(label6);
-  //p.add_label(label7);
+  p.add_label(label7);
   p.print_labels();
   p.rgw_metrics_perf_stop();
   delete cct;
