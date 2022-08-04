@@ -69,24 +69,25 @@ class PerfCountersCache {
 
     // evicts least recently updated label from labels list
     // removes labels CacheEntry from cache
-    void remove_label() {
-        std::string removed_label = labels.back();
-        labels.pop_back();
+    void remove_back_label() {
+      std::string removed_label = labels.back();
+      std::cout << "removed label is: " << removed_label << std::endl;
+      labels.pop_back();
 
-        ceph_assert(cache[removed_label]->counters);
-        cct->get_perfcounters_collection()->remove(cache[removed_label]->counters);
-        //delete cache[removed_label]->counters;
-        delete cache[removed_label]->counters;
-        cache[removed_label]->counters = NULL;
+      ceph_assert(cache[removed_label]->counters);
+      cct->get_perfcounters_collection()->remove(cache[removed_label]->counters);
+      //delete cache[removed_label]->counters;
+      delete cache[removed_label]->counters;
+      cache[removed_label]->counters = NULL;
 
-        delete cache[removed_label]->pos;
-        cache[removed_label]->pos = NULL;
+      delete cache[removed_label]->pos;
+      cache[removed_label]->pos = NULL;
 
-        delete cache[removed_label];
-        cache[removed_label] = NULL;
+      delete cache[removed_label];
+      cache[removed_label] = NULL;
 
-        cache.erase(removed_label);
-        curr_size--;
+      cache.erase(removed_label);
+      curr_size--;
     }
 
   public:
@@ -97,8 +98,8 @@ class PerfCountersCache {
       if(label_exists(label)) {
         std::cout << "label already exists in cache" << std::endl;
         return;
-      } else if(cache_size == curr_size) {
-        remove_label();
+      } else if(curr_size >= cache_size) {
+        remove_back_label();
       }
 
       // plb gets cleaned up in it's destructor
@@ -165,22 +166,30 @@ class PerfCountersCache {
       update_labels_list(label);
     }
 
-    void rgw_metrics_perf_stop() {
-      for(auto it = cache.begin(); it != cache.end(); ++it ) {
-        ceph_assert(it->second->counters);
-        cct->get_perfcounters_collection()->remove(it->second->counters);
-        delete it->second->counters;
-      }
+   // rgw_metrics_perf_stop cannot be called in the destructor and it's contents cannot be run in the destructor either
+   // it must be called seperately, uncommenting commented out lines in the destructor leads to segfaults
+   void rgw_metrics_perf_stop() {
+     for(auto it = cache.begin(); it != cache.end(); ++it ) {
+       ceph_assert(it->second->counters);
+       cct->get_perfcounters_collection()->remove(it->second->counters);
+       delete it->second->counters;
+     }
+   }
 
-      std::cout << "Stopped rgw metrics perf counters" << std::endl;
-    }
+   ~PerfCountersCache() {
+     //std::cout << "~PerfCountersCache() Destructor Called" << std::endl;
 
-    ~PerfCountersCache() {
-      //std::cout << "~PerfCountersCache() Destructor Called" << std::endl;
-      // deallocate memory in cache
-      for(auto it = cache.begin(); it != cache.end(); ++it ) {
-        delete it->second->pos;
-        delete it->second;
+     //rgw_metrics_perf_stop();
+     // deallocate memory in cache
+     for(auto it = cache.begin(); it != cache.end(); ++it ) {
+       //ceph_assert(it->second->counters);
+       //cct->get_perfcounters_collection()->remove(it->second->counters);
+       //delete it->second->counters;
+
+       delete it->second->pos;
+       it->second->pos = NULL;
+       delete it->second;
+       it->second = NULL;
       }
     }
 
