@@ -19,9 +19,9 @@ enum RGWCounters {
 // Wrapper around PerfCounters Instance + iterator to labels position in list
 struct CacheEntry {
   PerfCounters *counters;
-  labels_list::iterator *pos;
+  labels_list::iterator pos;
 
-  CacheEntry(PerfCounters* _counters, labels_list::iterator* _pos) {
+  CacheEntry(PerfCounters* _counters, labels_list::iterator _pos) {
     counters = _counters; 
     pos = _pos;
   }
@@ -53,8 +53,8 @@ class PerfCountersCache {
 
     // move recently updated items in the list to the front
     void update_labels_list(std::string label) {
-      labels.erase(*(cache[label]->pos));
-      *(cache[label]->pos) = labels.insert(labels.begin(), label);
+      labels.erase(cache[label]->pos);
+      cache[label]->pos = labels.insert(labels.begin(), label);
     }
 
     // evicts least recently updated label from labels list
@@ -69,9 +69,6 @@ class PerfCountersCache {
       //delete cache[removed_label]->counters;
       delete cache[removed_label]->counters;
       cache[removed_label]->counters = NULL;
-
-      delete cache[removed_label]->pos;
-      cache[removed_label]->pos = NULL;
 
       delete cache[removed_label];
       cache[removed_label] = NULL;
@@ -99,7 +96,7 @@ class PerfCountersCache {
       PerfCounters *counters = plb.create_perf_counters();
       // TODO: NEED TO LOOK THROUGH THIS
       cct->get_perfcounters_collection()->add(counters);
-      labels_list::iterator *pos = new labels_list::iterator(labels.insert(labels.begin(), label));
+      labels_list::iterator pos = labels.insert(labels.begin(), label);
       CacheEntry *m = new CacheEntry(counters, pos);
       cache[label] = m;
       curr_size++;
@@ -176,8 +173,6 @@ class PerfCountersCache {
        //cct->get_perfcounters_collection()->remove(it->second->counters);
        //delete it->second->counters;
 
-       delete it->second->pos;
-       it->second->pos = NULL;
        delete it->second;
        it->second = NULL;
       }
@@ -200,7 +195,7 @@ class PerfCountersCache {
       /*
       std::cout << "labels list from pos in cache is: [";
       for(auto it = cache.begin(); it != cache.end(); ++it ) {
-        std::cout << **(it->second->pos) << ", ";
+        std::cout << *(it->second->pos) << ", ";
       }
       std::cout << "]" << std::endl;
       */
