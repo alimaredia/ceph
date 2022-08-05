@@ -1,6 +1,8 @@
 #include <iostream>
 #include <unordered_map>
 #include <list>
+#include <random>
+#include <vector>
 #include "common/perf_counters.h"
 #include "common/ceph_context.h"
 //#include <boost/intrusive/list.hpp>
@@ -12,18 +14,6 @@ enum RGWCounters {
   l_rgw_metrics_first = 15000,
   l_rgw_put_b,
   l_rgw_metrics_last,
-};
-
-struct Request {
-  std::string label;
-  RGWCounters counter;
-  uint64_t delta;
-
-  Request(std::string _label, RGWCounters _counter, uint64_t _delta) {
-    label = _label; 
-    counter = _counter;
-    delta = _delta;
-  }
 };
 
 // Wrapper around PerfCounters Instance + iterator to labels position in list
@@ -217,6 +207,72 @@ class PerfCountersCache {
     }
 };
 
+struct Request {
+  std::string label;
+  RGWCounters counter;
+  uint64_t val;
+  int op;
+
+  Request(std::string _label, RGWCounters _counter, uint64_t _val, int _op) {
+    label = _label; 
+    counter = _counter;
+    val = _val;
+    op = _op;
+  }
+};
+
+std::vector<Request> gen_requests(int num_requests, int num_buckets, int num_users, int min_val, int max_val) {
+  std::vector<Request> requests;
+
+  std::random_device rd_buckets; // obtain a random number from hardware
+  std::mt19937 gen_buckets(rd_buckets()); // seed the generator
+  std::uniform_int_distribution<> distr_buckets(1, num_buckets); // define the range
+                                                                 //
+  std::random_device rd_users;
+  std::mt19937 gen_users(rd_users());
+  std::uniform_int_distribution<> distr_users(1, num_users);
+                                                 
+  std::random_device rd_counters;
+  std::mt19937 gen_counters(rd_counters());
+  std::uniform_int_distribution<> distr_counters(l_rgw_metrics_first+1, l_rgw_metrics_last-1);
+
+  std::random_device rd_vals;
+  std::mt19937 gen_vals(rd_vals());
+  std::uniform_int_distribution<> distr_vals(min_val, max_val);
+                                                 //
+  std::random_device rd_ops;
+  std::mt19937 gen_ops(rd_ops());
+  std::uniform_int_distribution<> distr_ops(1, 3);
+
+  for(int i = 0; i < num_requests; ++i) {
+    int user_num = distr_users(gen_users);
+    std::string user_str = std::to_string(user_num);
+
+    int bucket_num = distr_buckets(gen_buckets);
+    std::string bucket_str = std::to_string(bucket_num);
+
+    std::string label = "rgw::user=U" + user_str + "bucket=B" + bucket_str;
+    std::cout << label << " ";
+
+    int counter_num = distr_counters(gen_counters);
+    RGWCounters counter = static_cast<RGWCounters>(counter_num);
+    std::cout << "counter=" << counter << " ";
+
+    int val = distr_vals(gen_vals);
+    std::cout << "val=" << val << " ";
+
+    int op = distr_ops(gen_ops);
+    std::cout << "op=" << op << " ";
+    std::cout << std::endl;
+
+    Request r(label, counter, val, op);
+    requests.push_back(r);
+  }
+
+  return requests;
+}
+
+
 int main() {
   auto cct = new CephContext(CEPH_ENTITY_TYPE_CLIENT);
   PerfCountersCache p(5, cct);
@@ -233,8 +289,9 @@ int main() {
   p.add_label(label3);
   p.add_label(label4);
   p.add_label(label5);
+  p.add_label(label);
+  p.add_label(label);
   p.print_labels();
-  Request r(label, l_rgw_put_b, 256);
 
   p.inc(label, l_rgw_put_b, 10);
   p.get(label, l_rgw_put_b);
@@ -250,6 +307,18 @@ int main() {
   p.print_labels();
   p.rgw_metrics_perf_stop();
   delete cct;
+
+  std::cout << std::endl;
+  std::cout << "request generation play around" << std::endl;
+  gen_requests(10, 5,5,10,30);
+  // want to be able to generate random labels
+  //  - combination of random users and random buckets
+  //  - want to be able to generate random counters
+  //  - want to be able to generate random numbers (very small ones)
+  //  - want to be able to generate random ops (inc, set, dec)
+  //  - then I want to be able to process requests on a PerfCountersCache
+  //  - split everything out into files
+
 
   return 0;
 }
