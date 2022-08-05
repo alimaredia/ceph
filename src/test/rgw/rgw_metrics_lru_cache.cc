@@ -227,7 +227,7 @@ std::vector<Request> gen_requests(int num_requests, int num_buckets, int num_use
   std::random_device rd_buckets; // obtain a random number from hardware
   std::mt19937 gen_buckets(rd_buckets()); // seed the generator
   std::uniform_int_distribution<> distr_buckets(1, num_buckets); // define the range
-                                                                 //
+
   std::random_device rd_users;
   std::mt19937 gen_users(rd_users());
   std::uniform_int_distribution<> distr_users(1, num_users);
@@ -239,7 +239,7 @@ std::vector<Request> gen_requests(int num_requests, int num_buckets, int num_use
   std::random_device rd_vals;
   std::mt19937 gen_vals(rd_vals());
   std::uniform_int_distribution<> distr_vals(min_val, max_val);
-                                                 //
+
   std::random_device rd_ops;
   std::mt19937 gen_ops(rd_ops());
   std::uniform_int_distribution<> distr_ops(1, 3);
@@ -252,18 +252,14 @@ std::vector<Request> gen_requests(int num_requests, int num_buckets, int num_use
     std::string bucket_str = std::to_string(bucket_num);
 
     std::string label = "rgw::user=U" + user_str + "bucket=B" + bucket_str;
-    std::cout << label << " ";
 
     int counter_num = distr_counters(gen_counters);
     RGWCounters counter = static_cast<RGWCounters>(counter_num);
-    std::cout << "counter=" << counter << " ";
 
     int val = distr_vals(gen_vals);
-    std::cout << "val=" << val << " ";
 
     int op = distr_ops(gen_ops);
-    std::cout << "op=" << op << " ";
-    std::cout << std::endl;
+    //std::cout << label << " counter=" << counter << " val=" << val << " op=" << op << std::endl;
 
     Request r(label, counter, val, op);
     requests.push_back(r);
@@ -272,53 +268,32 @@ std::vector<Request> gen_requests(int num_requests, int num_buckets, int num_use
   return requests;
 }
 
+void process_requests(PerfCountersCache *p, std::vector<Request> requests) {
+  for(unsigned i = 0; i < requests.size(); i++) {
+    p->add_label(requests[i].label);
+    if(requests[i].op == 1) {
+      p->set(requests[i].label, requests[i].counter, requests[i].val);
+    } else if(requests[i].op == 2) {
+      p->dec(requests[i].label, requests[i].counter, requests[i].val);
+    } else {
+      p->inc(requests[i].label, requests[i].counter, requests[i].val);
+    }
+  }
+}
+
 
 int main() {
   auto cct = new CephContext(CEPH_ENTITY_TYPE_CLIENT);
-  PerfCountersCache p(5, cct);
+  int cache_size = 10;
+  PerfCountersCache *p = new PerfCountersCache(cache_size, cct);
 
-  std::string label = "rgw::user=U,bucket=B";
-  std::string label2 = "rgw::user=U2,bucket=B2";
-  std::string label3 = "rgw::user=U3,bucket=B3";
-  std::string label4 = "rgw::user=U4,bucket=B4";
-  std::string label5 = "rgw::user=U5,bucket=B5";
-  std::string label6 = "rgw::user=U6,bucket=B6";
-  std::string label7 = "rgw::user=U7,bucket=B7";
-  p.add_label(label);
-  p.add_label(label2);
-  p.add_label(label3);
-  p.add_label(label4);
-  p.add_label(label5);
-  p.add_label(label);
-  p.add_label(label);
-  p.print_labels();
+  std::vector<Request> requests = gen_requests(20, 5,5,10,30);
+  process_requests(p, requests);
 
-  p.inc(label, l_rgw_put_b, 10);
-  p.get(label, l_rgw_put_b);
-  p.set(label, l_rgw_put_b, 20);
-  p.set(label3, l_rgw_put_b, 34);
-  p.get(label, l_rgw_put_b);
-  p.get(label3, l_rgw_put_b);
-  p.dec(label, l_rgw_put_b, 7);
-  p.get(label, l_rgw_put_b);
-
-  p.add_label(label6);
-  p.add_label(label7);
-  p.print_labels();
-  p.rgw_metrics_perf_stop();
+  p->print_labels();
+  p->rgw_metrics_perf_stop();
+  delete p;
   delete cct;
-
-  std::cout << std::endl;
-  std::cout << "request generation play around" << std::endl;
-  gen_requests(10, 5,5,10,30);
-  // want to be able to generate random labels
-  //  - combination of random users and random buckets
-  //  - want to be able to generate random counters
-  //  - want to be able to generate random numbers (very small ones)
-  //  - want to be able to generate random ops (inc, set, dec)
-  //  - then I want to be able to process requests on a PerfCountersCache
-  //  - split everything out into files
-
 
   return 0;
 }
