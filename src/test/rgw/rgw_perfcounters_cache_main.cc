@@ -63,6 +63,7 @@ int main() {
   delete p;
   delete cct;
 
+  std::cout << "Intrusive play around" << std::endl;
   Label *l1 = new Label{"label1"};
   // label must be declared before the list so that it can be destructed by the destructor AFTER the list is destructed
   LabelsList *ll = new LabelsList;
@@ -73,7 +74,7 @@ int main() {
 
   Label *l2 = new Label{"label2"};
   LabelsList *ll2 = new LabelsList;
-  ll2->push_back(*l1);
+  //ll2->push_back(*l1);
   ll2->push_back(*l2);
 
   for (const Label &l : *ll2)
