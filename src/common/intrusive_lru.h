@@ -93,6 +93,9 @@ class intrusive_lru {
   size_t lru_target_size = 0;
 
   void evict() {
+    std::cout << "first bool is: " << !unreferenced_list.empty() << std::endl;
+    std::cout << "second bool is: " << (lru_set.size() > lru_target_size) << std::endl;
+    std::cout << "lru_set.size() is: " << lru_set.size() << std::endl;
     while (!unreferenced_list.empty() &&
 	   lru_set.size() > lru_target_size) {
       auto &b = unreferenced_list.front();
@@ -102,6 +105,7 @@ class intrusive_lru {
 	lru_set.iterator_to(b),
 	[](auto *p) { delete p; }
       );
+      std::cout << "Made it into instrusive_lru::evict while loop, delete called" << std::endl;
     }
   }
 
@@ -116,6 +120,7 @@ class intrusive_lru {
     assert(!b.lru);
     lru_set.insert(b);
     b.lru = this;
+    std::cout << "evict() called in insert" << std::endl;
     evict();
   }
 
@@ -123,6 +128,7 @@ class intrusive_lru {
     assert(b.lru);
     unreferenced_list.push_back(b);
     b.lru = nullptr;
+    std::cout << "evict() called in unreferenced" << std::endl;
     evict();
   }
 
@@ -138,11 +144,13 @@ public:
       k,
       icd);
     if (missing) {
+      std::cout << "missing is true" << std::endl;
       auto ret = new T(k);
       lru_set.insert_commit(*ret, icd);
       insert(*ret);
       return {TRef(ret), false};
     } else {
+      std::cout << "missing is false" << std::endl;
       access(*iter);
       return {TRef(static_cast<T*>(&*iter)), true};
     }
@@ -163,7 +171,16 @@ public:
 
   void set_target_size(size_t target_size) {
     lru_target_size = target_size;
+    std::cout << "evict() called in set_target_size" << std::endl;
     evict();
+  }
+
+  ~intrusive_lru() {
+    std::cout << "\ndestructor for intrusive_lru called" << std::endl;
+    lru_target_size = 0;
+    while (!unreferenced_list.empty()) {
+      evict();
+    }
   }
 
   friend void intrusive_ptr_add_ref<>(intrusive_lru_base<Config> *);
@@ -172,6 +189,7 @@ public:
 
 template <typename Config>
 void intrusive_ptr_add_ref(intrusive_lru_base<Config> *p) {
+  std::cout << "intrusive_ptr_add_ref called" << std::endl;
   assert(p);
   assert(p->lru);
   p->use_count++;
@@ -179,10 +197,12 @@ void intrusive_ptr_add_ref(intrusive_lru_base<Config> *p) {
 
 template <typename Config>
 void intrusive_ptr_release(intrusive_lru_base<Config> *p) {
+  std::cout << "intrusive_ptr_release called" << std::endl;
   assert(p);
   assert(p->use_count > 0);
   --p->use_count;
   if (p->use_count == 0) {
+    std::cout << "intrusive_ptr_release p->user_count is 0" << std::endl;
     p->lru->unreferenced(*p);
   }
 }

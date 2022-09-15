@@ -1,57 +1,76 @@
-#include "rgw_perfcounters_cache.h"
-#include "rgw_perfcounters_cache_request.h"
-#include <boost/intrusive/list.hpp>
-//#include "common/intrusive_lru.h"
+//#include "rgw_perfcounters_cache.h"
+//#include "rgw_perfcounters_cache_request.h"
+//#include <boost/intrusive/list.hpp>
+#include <iostream>
+#include "common/intrusive_lru.h"
+#include "common/perf_counters.h"
+#include "common/ceph_context.h"
 
-class Label : public boost::intrusive::list_base_hook<>
-{
-  public:
-    std::string val;
-    Label(std::string _label) :  val{std::move(_label)}  {}
-    //Label(std::string _label) :  val(_label)  {}
+enum RGWCounters {
+  l_rgw_metrics_first = 15000,
+  l_rgw_req,
+  l_rgw_failed_req,
+  l_rgw_put_b,
+  l_rgw_get_b,
+  l_rgw_metrics_last,
 };
 
-
-typedef boost::intrusive::list<Label> LabelsList;
-
-class ListWrapper {
-  private:
-    LabelsList ll;
-
-  public:
-    void add_label(Label l1) {
-      ll.push_front(l1);
-    }
-
-    void print_labels() {
-      for(LabelsList::iterator it = ll.begin(); it != ll.end(); ++it) {
-        //std::cout << (*it).val << std::endl;
-        std::cout << "hello world" << std::endl;
-      }
-    }
-
-    /*
-    ~ListWrapper() {
-      for(LabelsList::iterator it = ll.begin(); it != ll.end(); ++it) {
-        ll.erase(it);
-      }
-    }
-    */
-
+template <typename LRUItem>
+struct item_to_key {
+  using type = std::string;
+  const type &operator()(const LRUItem &item) {
+    return item.instance_labels;
+  }
 };
 
-/*
-void add_label(LabelsList ll) {
-  Label l1("label1");
-  ll.push_front(l1);
-}
+struct PCountersCacheEntry : public ceph::common::intrusive_lru_base<
+  ceph::common::intrusive_lru_config<
+    std::string, PCountersCacheEntry, item_to_key<PCountersCacheEntry>>> {
+  std::string instance_labels;
+  int value;
+  //PerfCounters *perfcounters_instance = NULL;
 
-*/
+  PCountersCacheEntry(std::string key) : instance_labels(key) {}
+};
 
+class PCountersCache : public PCountersCacheEntry::lru_t {
+private:
+  CephContext *cct;
+public:
+  auto add(std::string key, int value) {
+
+    // perf counters instance creation code
+    PerfCountersBuilder plb(cct, key, l_rgw_metrics_first, l_rgw_metrics_last);
+    plb.add_u64_counter(l_rgw_req, "req", "Size of puts");
+    plb.add_u64_counter(l_rgw_failed_req, "failed_req", "Aborted Requests");
+    plb.add_u64_counter(l_rgw_put_b, "put_b", "Size of puts");
+    plb.add_u64_counter(l_rgw_get_b, "get_b", "Size of gets");
+
+    PerfCounters *counters = plb.create_perf_counters();
+    cct->get_perfcounters_collection()->add(counters);
+
+    // perf counters instance clean up code
+    cct->get_perfcounters_collection()->remove(counters);
+    delete counters;
+    counters = NULL;
+
+    auto [ref, key_existed] = get_or_create(key);
+    if (!key_existed) {
+      //ref->perfcounters_instance = counters;
+      ref->value = value;
+    }
+    return std::pair(ref, key_existed);
+  }
+
+  PCountersCache(CephContext *_cct, size_t _cache_size) {
+    cct = _cct;
+    set_target_size(_cache_size);
+  }
+};
 
 // Wrapper around PerfCounters Instance + iterator to labels position in list
 int main() {
-  auto cct = new CephContext(CEPH_ENTITY_TYPE_CLIENT);
+  /*
   int cache_size = 10;
   PerfCountersCache *p = new PerfCountersCache(cache_size, cct);
 
@@ -62,41 +81,26 @@ int main() {
   p->rgw_metrics_perf_stop();
   delete p;
   delete cct;
-
-  std::cout << "Intrusive play around" << std::endl;
-  Label *l1 = new Label{"label1"};
-  // label must be declared before the list so that it can be destructed by the destructor AFTER the list is destructed
-  LabelsList *ll = new LabelsList;
-  ll->push_back(*l1);
-
-  for (const Label &l : *ll)
-    std::cout << l.val << std::endl;
-
-  Label *l2 = new Label{"label2"};
-  LabelsList *ll2 = new LabelsList;
-  //ll2->push_back(*l1);
-  ll2->push_back(*l2);
-
-  for (const Label &l : *ll2)
-    std::cout << l.val << std::endl;
-
-  delete ll;
-  delete ll2;
-  delete l1;
-  delete l2;
-
-
-  /*
-  //Label l1 = new Label("label1");
-  //std::string l2 = "label2";
-  //add_label(ll);
-  //LabelsList::iterator it = ll.begin();
-  ListWrapper *lw = new ListWrapper;
-  lw->add_label(l1);
-  //lw->add_label(l2);
-  //lw->print_labels();
-  delete lw;
   */
+  auto cct = new CephContext(CEPH_ENTITY_TYPE_CLIENT);
+
+
+
+  // TODO: NEED TO LOOK THROUGH THIS
+  size_t target_size = 3;
+  PCountersCache cache(cct, target_size);
+
+  std::string key1 = "sally";
+  int val1 = 11;
+  auto [ref, key_existed] = cache.add(key1, val1);
+  std::cout << "instance_labels for entry 1: " << ref->instance_labels << std::endl;
+
+  std::string key2 = "harry";
+  int val2 = 22;
+  auto [ref2, key_existed2] = cache.add(key2, val2);
+  std::cout << "instance_labels for entry 2: " << ref2->instance_labels << std::endl;
+
+  delete cct;
 
   return 0;
 }

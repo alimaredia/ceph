@@ -47,8 +47,9 @@ add_executable(unittest_http_manager test_http_manager.cc)
 add_ceph_unittest(unittest_http_manager)
 target_link_libraries(unittest_http_manager ${rgw_libs})
 
-add_executable(rgw_perfcounters_cache rgw_perfcounters_cache_main.cc rgw_perfcounters_cache.cc rgw_perfcounters_cache_request.cc)
-target_link_libraries(rgw_perfcounters_cache ${rgw_libs})
+add_executable(rgw_perfcounters_cache rgw_perfcounters_cache_main.cc)
+  #rgw_perfcounters_cache.cc rgw_perfcounters_cache_request.cc)
+target_link_libraries(rgw_perfcounters_cache ceph-common)
 
 # unitttest_rgw_reshard_wait
 add_executable(unittest_rgw_reshard_wait test_rgw_reshard_wait.cc)
