@@ -22,20 +22,20 @@ struct item_to_key {
   }
 };
 
-struct PCountersCacheEntry : public ceph::common::intrusive_lru_base<
+struct PerfCountersCacheEntry : public ceph::common::intrusive_lru_base<
   ceph::common::intrusive_lru_config<
-    std::string, PCountersCacheEntry, item_to_key<PCountersCacheEntry>>> {
+    std::string, PerfCountersCacheEntry, item_to_key<PerfCountersCacheEntry>>> {
   std::string instance_labels;
   PerfCounters *perfcounters_instance = NULL;
   //CephContext *cct = NULL;
   //PerfCountersCollection *collection = NULL;
 
-  PCountersCacheEntry(std::string key) : instance_labels(key) {}
+  PerfCountersCacheEntry(std::string key) : instance_labels(key) {}
 
-  ~PCountersCacheEntry() {
+  ~PerfCountersCacheEntry() {
     // perf counters instance clean up code
     if(perfcounters_instance) {
-      // TODO: fix this
+      // TODO: figure out removal from perfcounters_collection
       //ceph_assert(perfcounters_instance);
       //collection->remove(perfcounters_instance);
       //cct->get_perfcounters_collection()->remove(perfcounters_instance);
@@ -45,11 +45,11 @@ struct PCountersCacheEntry : public ceph::common::intrusive_lru_base<
   }
 };
 
-class PCountersCache : public PCountersCacheEntry::lru_t {
+class PerfCountersCache : public PerfCountersCacheEntry::lru_t {
 private:
   CephContext *cct;
 public:
-  auto add(std::string key) {
+  void add(std::string key) {
     auto [ref, key_existed] = get_or_create(key);
     if (!key_existed) {
       // perf counters instance creation code
@@ -66,7 +66,6 @@ public:
       //ref->collection->add(counters);
       //ref->cct = cct;
     }
-    return std::pair(ref, key_existed);
   }
 
   void inc(std::string label, int indx, uint64_t v) {
@@ -111,13 +110,12 @@ public:
     return val;
   }
 
-  PCountersCache(CephContext *_cct, size_t _cache_size) {
+  PerfCountersCache(CephContext *_cct, size_t _cache_size) {
     cct = _cct;
     set_target_size(_cache_size);
   }
 
-  ~PCountersCache() {
-  }
+  ~PerfCountersCache() {}
 };
 
 #endif
