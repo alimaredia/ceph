@@ -4168,8 +4168,8 @@ void RGWPutObj::execute(optional_yield y)
 
   std::string labels = ceph::perf_counters::cache_key("rgw_perfcounters_cache", {{"Bucket", s->bucket_name}, {"User", s->user->get_display_name()}});
   //ldpp_dout(this, 20) << "labels for perf counters cache: " << labels << dendl;
-  auto [ref, key_existed] = perfcounters_cache->add(labels);
-  perfcounters_cache->inc(labels, l_rgw_metrics_put_b, s->obj_size);
+  perf_counters_cache->add(labels);
+  perf_counters_cache->inc(labels, l_rgw_metrics_put_b, s->obj_size);
 
   perfcounter->inc(l_rgw_put_b, s->obj_size);
 
