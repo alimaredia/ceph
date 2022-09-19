@@ -4,14 +4,13 @@
 #include "common/intrusive_lru.h"
 #include "common/perf_counters.h"
 #include "common/ceph_context.h"
-#include "common/perf_counters_cache_key.h"
 
-enum RGWCounters {
-  l_rgw_metrics_first = 15000,
-  l_rgw_req,
-  l_rgw_failed_req,
-  l_rgw_put_b,
-  l_rgw_get_b,
+enum {
+  l_rgw_metrics_first = 15050,
+  l_rgw_metrics_req,
+  l_rgw_metrics_failed_req,
+  l_rgw_metrics_put_b,
+  l_rgw_metrics_get_b,
   l_rgw_metrics_last,
 };
 
@@ -55,10 +54,10 @@ public:
     if (!key_existed) {
       // perf counters instance creation code
       PerfCountersBuilder plb(cct, key, l_rgw_metrics_first, l_rgw_metrics_last);
-      plb.add_u64_counter(l_rgw_req, "req", "number of reqs");
-      plb.add_u64_counter(l_rgw_failed_req, "failed_req", "Aborted Requests");
-      plb.add_u64_counter(l_rgw_put_b, "put_b", "Size of puts");
-      plb.add_u64_counter(l_rgw_get_b, "get_b", "Size of gets");
+      plb.add_u64_counter(l_rgw_metrics_req, "req", "number of reqs");
+      plb.add_u64_counter(l_rgw_metrics_failed_req, "failed_req", "Aborted Requests");
+      plb.add_u64_counter(l_rgw_metrics_put_b, "put_b", "Size of puts");
+      plb.add_u64_counter(l_rgw_metrics_get_b, "get_b", "Size of gets");
 
       PerfCounters *counters = plb.create_perf_counters();
       cct->get_perfcounters_collection()->add(counters);
