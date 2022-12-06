@@ -116,14 +116,6 @@ public:
     }
   }
 
-  void dec(std::string label, int indx, int64_t x, int64_t y) {
-    auto counters = get(label);
-    if(counters) {
-      counters->hinc(indx, x, y);
-      base_counters->hinc(indx, x, y);
-    }
-  }
-
   void tinc(std::string label, int indx, utime_t amt) {
     auto counters = get(label);
     if(counters) {

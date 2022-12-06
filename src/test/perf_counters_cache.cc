@@ -1,43 +1,14 @@
-#include "include/int_types.h"
-#include "include/types.h" // FIXME: ordering shouldn't be important, but right 
-                           // now, this include has to come before the others.
-
-
-#include "common/perf_counters_collection.h"
 #include "common/perf_counters_cache.h"
 #include "common/admin_socket_client.h"
-#include "common/ceph_context.h"
-#include "common/config.h"
-#include "common/errno.h"
-#include "common/safe_io.h"
-
-#include "common/code_environment.h"
 #include "global/global_context.h"
 #include "global/global_init.h"
 #include "include/msgr.h" // for CEPH_ENTITY_TYPE_CLIENT
 #include "gtest/gtest.h"
 
-#include <errno.h>
-#include <fcntl.h>
-#include <map>
-#include <poll.h>
-#include <sstream>
-#include <stdint.h>
-#include <string.h>
-#include <string>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <time.h>
-#include <unistd.h>
-#include <thread>
-
-#include "common/common_init.h"
-
 using namespace std;
 
 int main(int argc, char **argv) {
-  map<string,string> defaults = {
+  std::map<string,string> defaults = {
     { "admin_socket", get_rand_socket_path() }
   };
   std::vector<const char*> args;
@@ -183,8 +154,8 @@ TEST(PerfCountersCache, TestNoEviction) {
   cleanup_test(pcc);
 }
 
-TEST(PerfCountersCache, TestCacheCounter) {
-  PerfCountersCache *pcc = setup_test_perf_counters_cache(g_ceph_context, false, 3);
+TEST(PerfCountersCache, TestLabeledCounters) {
+  PerfCountersCache *pcc = setup_test_perf_counters_cache(g_ceph_context);
   std::string label1 = "testlabel1";
   std::string label2 = "testlabel2";
   std::string label3 = "testlabel3";
@@ -219,10 +190,55 @@ TEST(PerfCountersCache, TestCacheCounter) {
   // test set_counters()
   pcc->add(label3);
   pcc->set_counter(label3, TEST_PERFCOUNTERS_COUNTER, 4);
+  uint64_t val = pcc->get_counter(label3, TEST_PERFCOUNTERS_COUNTER);
+  ASSERT_EQ(val, 4);
   ASSERT_EQ("", client.do_request("{ \"prefix\": \"labeledperf dump\", \"format\": \"json\" }", &message));
   ASSERT_EQ("{\"testlabel1\":{\"test_counter\":1},\"testlabel2\":{\"test_counter\":1},\"testlabel3\":{\"test_counter\":4}}", message);
   ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump\", \"format\": \"json\" }", &message));
   ASSERT_EQ("{\"test_base_counters\":{\"test_counter\":6,\"test_time\":0.000000000,\"test_time_avg\":{\"avgcount\":0,\"sum\":0.000000000,\"avgtime\":0.000000000}}}", message);
+
+  cleanup_test(pcc);
+}
+
+TEST(PerfCountersCache, TestLabeledTimes) {
+  PerfCountersCache *pcc = setup_test_perf_counters_cache(g_ceph_context);
+  std::string label1 = "testlabel1";
+  std::string label2 = "testlabel2";
+  std::string label3 = "testlabel3";
+
+  pcc->add(label1);
+  pcc->add(label2);
+
+  // test inc()
+  pcc->tinc(label1, TEST_PERFCOUNTERS_TIME, utime_t(100,0));
+  pcc->tinc(label2, TEST_PERFCOUNTERS_TIME, utime_t(200,0));
+
+  //tinc() that takes a ceph_timespan
+  ceph::timespan ceph_timespan = std::chrono::seconds(10);
+  pcc->tinc(label1, TEST_PERFCOUNTERS_TIME, ceph_timespan);
+
+  pcc->tinc(label1, TEST_PERFCOUNTERS_TIME_AVG, utime_t(200,0));
+  pcc->tinc(label1, TEST_PERFCOUNTERS_TIME_AVG, utime_t(400,0));
+  pcc->tinc(label2, TEST_PERFCOUNTERS_TIME_AVG, utime_t(100,0));
+  pcc->tinc(label2, TEST_PERFCOUNTERS_TIME_AVG, utime_t(200,0));
+
+  AdminSocketClient client(get_rand_socket_path());
+  std::string message;
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"labeledperf dump\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"testlabel1\":{\"test_time\":110.000000000,\"test_time_avg\":{\"avgcount\":2,\"sum\":600.000000000,\"avgtime\":300.000000000}},\"testlabel2\":{\"test_time\":200.000000000,\"test_time_avg\":{\"avgcount\":2,\"sum\":300.000000000,\"avgtime\":150.000000000}}}", message);
+
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"labeledperf schema\", \"format\": \"json\"  }", &message));
+  ASSERT_EQ("{\"testlabel1\":{\"test_time\":{\"type\":1,\"metric_type\":\"gauge\",\"value_type\":\"real\",\"description\":\"\",\"nick\":\"\",\"priority\":0,\"units\":\"none\"},\"test_time_avg\":{\"type\":5,\"metric_type\":\"gauge\",\"value_type\":\"real-integer-pair\",\"description\":\"\",\"nick\":\"\",\"priority\":0,\"units\":\"none\"}},\"testlabel2\":{\"test_time\":{\"type\":1,\"metric_type\":\"gauge\",\"value_type\":\"real\",\"description\":\"\",\"nick\":\"\",\"priority\":0,\"units\":\"none\"},\"test_time_avg\":{\"type\":5,\"metric_type\":\"gauge\",\"value_type\":\"real-integer-pair\",\"description\":\"\",\"nick\":\"\",\"priority\":0,\"units\":\"none\"}}}", message);
+
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"test_base_counters\":{\"test_counter\":0,\"test_time\":310.000000000,\"test_time_avg\":{\"avgcount\":4,\"sum\":900.000000000,\"avgtime\":225.000000000}}}", message);
+
+  // test tset() & tget()
+  pcc->tset(label1, TEST_PERFCOUNTERS_TIME, utime_t(500,0));
+  utime_t label1_time = pcc->tget(label1, TEST_PERFCOUNTERS_TIME);
+  ASSERT_EQ(utime_t(500,0), label1_time);
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"test_base_counters\":{\"test_counter\":0,\"test_time\":700.000000000,\"test_time_avg\":{\"avgcount\":4,\"sum\":900.000000000,\"avgtime\":225.000000000}}}", message);
 
   cleanup_test(pcc);
 }
