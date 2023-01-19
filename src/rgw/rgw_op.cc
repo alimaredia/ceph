@@ -21,6 +21,7 @@
 #include "common/utf8.h"
 #include "common/ceph_json.h"
 #include "common/static_ptr.h"
+#include "common/perf_counters_key.h"
 #include "rgw_tracer.h"
 
 #include "rgw_rados.h"
@@ -2161,6 +2162,8 @@ void RGWGetObj::execute(optional_yield y)
   std::unique_ptr<RGWGetObj_Filter> decrypt;
   std::unique_ptr<RGWGetObj_Filter> run_lua;
   map<string, bufferlist>::iterator attr_iter;
+  std::string labels;
+  bool rgw_labeled_perf_counters;
 
   perfcounter->inc(l_rgw_get);
 
@@ -2337,6 +2340,14 @@ void RGWGetObj::execute(optional_yield y)
     return;
   }
 
+  rgw_labeled_perf_counters = s->cct->_conf.get_val<bool>("rgw_labeled_perf_counters");
+  if(rgw_labeled_perf_counters) {
+    labels = ceph::perf_counters::key_create("rgw", {{"Bucket", s->bucket_name}, {"User", s->user->get_display_name()}});
+    ldpp_dout(this, 20) << "labels for perf counters cache for l_rgw_metrics_get_b: " << labels << dendl;
+    auto counters = add_rgw_labeled_counters(labels, s->cct);
+    counters->inc(l_rgw_get_b, end-ofs);
+  }
+
   perfcounter->inc(l_rgw_get_b, end - ofs);
 
   op_ret = read_op->iterate(this, ofs_x, end_x, filter, s->yield);
@@ -2345,6 +2356,7 @@ void RGWGetObj::execute(optional_yield y)
     op_ret = filter->flush();
 
   perfcounter->tinc(l_rgw_get_lat, s->time_elapsed());
+
   if (op_ret < 0) {
     goto done_err;
   }
@@ -3918,6 +3930,14 @@ void RGWPutObj::execute(optional_yield y)
   off_t fst;
   off_t lst;
 
+  bool rgw_labeled_perf_counters = s->cct->_conf.get_val<bool>("rgw_labeled_perf_counters");
+  std::string labels = ceph::perf_counters::key_create("rgw", {{"Bucket", s->bucket_name}, {"User", s->user->get_display_name()}});
+  if(rgw_labeled_perf_counters) {
+    ldpp_dout(this, 20) << "labels for perf counters cache for l_rgw_metrics_put_b: " << labels << dendl;
+    auto counters = add_rgw_labeled_counters(labels, s->cct);
+    counters->inc(l_rgw_put);
+  }
+
   bool need_calc_md5 = (dlo_manifest == NULL) && (slo_info == NULL);
   perfcounter->inc(l_rgw_put);
   // report latency on return
@@ -4183,6 +4203,12 @@ void RGWPutObj::execute(optional_yield y)
   }
   s->obj_size = ofs;
   s->object->set_obj_size(ofs);
+
+  rgw_labeled_perf_counters = s->cct->_conf.get_val<bool>("rgw_labeled_perf_counters");
+  if(rgw_labeled_perf_counters) {
+    auto counters = add_rgw_labeled_counters(labels, s->cct);
+    counters->inc(l_rgw_put_b, s->obj_size);
+  }
 
   perfcounter->inc(l_rgw_put_b, s->obj_size);
 

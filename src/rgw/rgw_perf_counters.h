@@ -4,11 +4,14 @@
 #pragma once
 
 #include "include/common_fwd.h"
+#include "include/common_fwd.h"
+#include <string>
 
 extern PerfCounters *perfcounter;
 
 extern int rgw_perf_start(CephContext *cct);
 extern void rgw_perf_stop(CephContext *cct);
+extern PerfCounters* add_rgw_labeled_counters(std::string name, CephContext *cct);
 
 enum {
   l_rgw_first = 15000,
