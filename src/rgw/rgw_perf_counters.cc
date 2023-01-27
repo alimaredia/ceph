@@ -6,7 +6,6 @@
 #include "common/ceph_context.h"
 
 PerfCounters *perfcounter = NULL;
-PerfCountersCache *perf_counters_cache = NULL;
 
 int rgw_perf_start(CephContext *cct)
 {
@@ -67,15 +66,13 @@ int rgw_perf_start(CephContext *cct)
   
   perfcounter = plb.create_perf_counters();
   cct->get_perfcounters_collection()->add(perfcounter);
-  std::function<void(PerfCountersBuilder*)> lpcb_init = add_rgw_counters;
-
-  uint64_t target_size = cct->_conf.get_val<uint64_t>("rgw_perf_counters_cache_size");
-  bool eviction = cct->_conf.get_val<bool>("rgw_perf_counters_cache_eviction");
-  perf_counters_cache = new PerfCountersCache(cct, eviction, target_size, l_rgw_first, l_rgw_last, lpcb_init); 
   return 0;
 }
 
-void add_rgw_counters(PerfCountersBuilder *lpcb) {
+PerfCounters* add_rgw_labeled_counters(std::string name, CephContext *cct) {
+  auto lpcb = new PerfCountersBuilder(cct, name,
+	  l_rgw_first, l_rgw_last);
+
   lpcb->set_prio_default(PerfCountersBuilder::PRIO_USEFUL);
   lpcb->add_u64_counter(l_rgw_req, "req", "Requests");
   lpcb->add_u64_counter(l_rgw_failed_req, "failed_req", "Aborted requests");
@@ -118,14 +115,17 @@ void add_rgw_counters(PerfCountersBuilder *lpcb) {
   lpcb->add_u64(l_rgw_lua_current_vms, "lua_current_vms", "Number of Lua VMs currently being executed");
   lpcb->add_u64_counter(l_rgw_lua_script_ok, "lua_script_ok", "Successfull executions of lua scripts");
   lpcb->add_u64_counter(l_rgw_lua_script_fail, "lua_script_fail", "Failed executions of lua scripts");
+
+  auto counters = lpcb->create_perf_counters();
+  delete lpcb;
+  cct->get_perfcounters_collection()->add(counters);
+  return counters;
 }
 
 void rgw_perf_stop(CephContext *cct)
 {
   ceph_assert(perfcounter);
-  cct->get_perfcounters_collection()->remove(perfcounter);
+  cct->get_perfcounters_collection()->clear();
   delete perfcounter;
-  perf_counters_cache->clear_cache();
-  delete perf_counters_cache;
 }
 
