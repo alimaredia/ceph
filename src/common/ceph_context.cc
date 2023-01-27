@@ -550,7 +550,7 @@ int CephContext::_do_command(
       _perf_counters_collection->dump_formatted(f, true);
     }
   }
-  else if (command == "perfcounters_dump_labeled" || command == "4" ||
+  else if (command == "perfcounters_dump_labeled" || command == "3" ||
       command == "perf dump labeled") {
     _perf_counters_collection->dump_formatted(f, false, true);
   }
@@ -762,7 +762,6 @@ CephContext::CephContext(uint32_t module_type_,
   _admin_socket->register_command("perf schema name=labeled,type=CephString,req=false", _admin_hook, "dump perfcounters schema");
   _admin_socket->register_command("perf dump labeled", _admin_hook, "dump labeled perfcounters and their values");
   _admin_socket->register_command("3", _admin_hook, "");
-  _admin_socket->register_command("4", _admin_hook, "");
   _admin_socket->register_command("perf histogram schema", _admin_hook, "dump perf histogram schema");
   _admin_socket->register_command("perf reset name=var,type=CephString", _admin_hook, "perf reset <name>: perf reset all or one perfcounter name");
   _admin_socket->register_command("config show", _admin_hook, "dump current config settings");
