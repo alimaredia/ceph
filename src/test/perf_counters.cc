@@ -16,6 +16,7 @@
                            // now, this include has to come before the others.
 
 
+#include "common/perf_counters_key.h"
 #include "common/perf_counters_collection.h"
 #include "common/admin_socket_client.h"
 #include "common/ceph_context.h"
@@ -182,6 +183,7 @@ TEST(PerfCounters, MultiplePerfCounters) {
 	    "{\"avgcount\":0,\"sum\":0.000000000,\"avgtime\":0.000000000}},\"test_perfcounter_2\":{\"foo\":0,\"bar\":0.000000000}}"), msg);
 
   coll->remove(fake_pf2);
+  delete fake_pf2;
   ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump\", \"format\": \"json\" }", &msg));
   ASSERT_EQ(sd("{\"test_perfcounter_1\":{\"element1\":13,\"element2\":0.000000000,"
 	    "\"element3\":{\"avgcount\":0,\"sum\":0.000000000,\"avgtime\":0.000000000}}}"), msg);
@@ -254,4 +256,89 @@ TEST(PerfCounters, read_avg) {
   std::thread t2(counters_readavg_test, fake_pf);
   t2.join();
   t1.join();
+}
+
+static PerfCounters* setup_test_perfcounter_labeled(std::string name, CephContext *cct)
+{
+  auto bld = new PerfCountersBuilder(cct, name,
+	  TEST_PERFCOUNTERS2_ELEMENT_FIRST, TEST_PERFCOUNTERS2_ELEMENT_LAST);
+  bld->add_u64(TEST_PERFCOUNTERS2_ELEMENT_FOO, "foo");
+  bld->add_time(TEST_PERFCOUNTERS2_ELEMENT_BAR, "bar");
+
+  auto counters = bld->create_perf_counters();
+  delete bld;
+  cct->get_perfcounters_collection()->add(counters);
+  return counters;
+}
+
+TEST(PerfCounters, TestLabeledCounters) {
+  std::string label1 = ceph::perf_counters::key_create("key1", {{"label1", "val1"}});
+  std::string label2 = ceph::perf_counters::key_create("key2", {{"label2", "val2"}});
+
+  PerfCounters* counters1 = setup_test_perfcounter_labeled(label1, g_ceph_context);
+  PerfCounters* counters2 = setup_test_perfcounter_labeled(label2, g_ceph_context);
+
+  counters1->inc(TEST_PERFCOUNTERS2_ELEMENT_FOO, 3);
+  counters1->dec(TEST_PERFCOUNTERS2_ELEMENT_FOO, 1);
+  counters2->set(TEST_PERFCOUNTERS2_ELEMENT_FOO, 4);
+
+  AdminSocketClient client(get_rand_socket_path());
+  std::string message;
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump labeled\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"key1\":{\"labels\":{\"label1\":\"val1\"},\"foo\":2},\"key2\":{\"labels\":{\"label2\":\"val2\"},\"foo\":4}}", message);
+
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf schema\", \"labeled\": \"labeled\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"key1\":{\"labels\":{\"label1\":\"val1\"},\"foo\":{\"type\":2,\"metric_type\":\"gauge\",\"value_type\":\"integer\",\"description\":\"\",\"nick\":\"\",\"priority\":0,\"units\":\"none\"}},\"key2\":{\"labels\":{\"label2\":\"val2\"},\"foo\":{\"type\":2,\"metric_type\":\"gauge\",\"value_type\":\"integer\",\"description\":\"\",\"nick\":\"\",\"priority\":0,\"units\":\"none\"}}}", message);
+  g_ceph_context->get_perfcounters_collection()->clear();
+}
+
+TEST(PerfCounters, TestLabelStrings) {
+  AdminSocketClient client(get_rand_socket_path());
+  std::string message;
+
+  std::string only_key = "only_key";
+  PerfCounters* no_label_counters = setup_test_perfcounter_labeled(only_key, g_ceph_context);
+  no_label_counters->set(TEST_PERFCOUNTERS2_ELEMENT_FOO, 4);
+
+  // test unlabeled perf counters are not in the labeled dump
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump labeled\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{}", message);
+
+  // test empty val in a label pair will get the label pair added into the perf counters cache but empty key will not
+  std::string label1 = ceph::perf_counters::key_create("good_ctrs", {{"label3", "val4"}, {"label1", ""}});
+  PerfCounters* counters1 = setup_test_perfcounter_labeled(label1, g_ceph_context);
+
+  std::string label2 = ceph::perf_counters::key_create("bad_ctrs", {{"", "val4"}, {"label1", "val1"}});
+  PerfCounters* counters2 = setup_test_perfcounter_labeled(label2, g_ceph_context);
+
+  counters1->set(TEST_PERFCOUNTERS2_ELEMENT_FOO, 2);
+  counters2->set(TEST_PERFCOUNTERS2_ELEMENT_FOO, 4);
+
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump labeled\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"bad_ctrs\":{\"labels\":{\"label1\":\"val1\"},\"foo\":4},\"good_ctrs\":{\"labels\":{\"label1\":\"\",\"label3\":\"val4\"},\"foo\":2}}", message);
+
+  // test empty keys in each of the label pairs will get only the labels section added into the perf counters cache
+  std::string label3 = ceph::perf_counters::key_create("bad_ctrs2", {{"", "val2"}, {"", "val33"}});
+  PerfCounters* counters3 = setup_test_perfcounter_labeled(label3, g_ceph_context);
+  counters3->set(TEST_PERFCOUNTERS2_ELEMENT_FOO, 6);
+
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump labeled\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"bad_ctrs\":{\"labels\":{\"label1\":\"val1\"},\"foo\":4},\"bad_ctrs2\":{\"labels\":{},\"foo\":6},\"good_ctrs\":{\"labels\":{\"label1\":\"\",\"label3\":\"val4\"},\"foo\":2}}", message);
+
+  // a key with a somehow odd number of entries after the the key name will omit final unfinished label pair
+  std::string label4 = "too_many_delimiters";
+  label4 += '\0';
+  label4 += "label1";
+  label4 += '\0';
+  label4 += "val1";
+  label4 += '\0';
+  label4 += "label2";
+  label4 += '\0';
+  PerfCounters* counters4 = setup_test_perfcounter_labeled(label4, g_ceph_context);
+  counters4->set(TEST_PERFCOUNTERS2_ELEMENT_FOO, 8);
+
+  ASSERT_EQ("", client.do_request("{ \"prefix\": \"perf dump labeled\", \"format\": \"json\" }", &message));
+  ASSERT_EQ("{\"bad_ctrs\":{\"labels\":{\"label1\":\"val1\"},\"foo\":4},\"bad_ctrs2\":{\"labels\":{},\"foo\":6},\"good_ctrs\":{\"labels\":{\"label1\":\"\",\"label3\":\"val4\"},\"foo\":2},\"too_many_delimiters\":{\"labels\":{\"label1\":\"val1\"},\"foo\":8}}", message);
+
+  g_ceph_context->get_perfcounters_collection()->clear();
 }
