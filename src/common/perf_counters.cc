@@ -421,9 +421,9 @@ void PerfCounters::dump_formatted_generic(Formatter *f, bool schema,
       f->dump_int("type", d->type);
 
       if (d->type & PERFCOUNTER_COUNTER) {
-        f->dump_string("metric_type", "counter");
+	f->dump_string("metric_type", "counter");
       } else {
-        f->dump_string("metric_type", "gauge");
+	f->dump_string("metric_type", "gauge");
       }
 
       if (d->type & PERFCOUNTER_LONGRUNAVG) {
@@ -433,17 +433,17 @@ void PerfCounters::dump_formatted_generic(Formatter *f, bool schema,
           f->dump_string("value_type", "integer-integer-pair");
         }
       } else if (d->type & PERFCOUNTER_HISTOGRAM) {
-        if (d->type & PERFCOUNTER_TIME) {
-          f->dump_string("value_type", "real-2d-histogram");
-        } else {
-          f->dump_string("value_type", "integer-2d-histogram");
-        }
+	if (d->type & PERFCOUNTER_TIME) {
+	  f->dump_string("value_type", "real-2d-histogram");
+	} else {
+	  f->dump_string("value_type", "integer-2d-histogram");
+	}
       } else {
-        if (d->type & PERFCOUNTER_TIME) {
-          f->dump_string("value_type", "real");
-        } else {
-          f->dump_string("value_type", "integer");
-        }
+	if (d->type & PERFCOUNTER_TIME) {
+	  f->dump_string("value_type", "real");
+	} else {
+	  f->dump_string("value_type", "integer");
+	}
       }
 
       f->dump_string("description", d->description ? d->description : "");
@@ -455,23 +455,23 @@ void PerfCounters::dump_formatted_generic(Formatter *f, bool schema,
       f->dump_int("priority", get_adjusted_priority(d->prio));
       
       if (d->unit == UNIT_NONE) {
-        f->dump_string("units", "none"); 
+	f->dump_string("units", "none");
       } else if (d->unit == UNIT_BYTES) {
-        f->dump_string("units", "bytes");
+	f->dump_string("units", "bytes");
       }
       f->close_section();
     } else {
       if (d->type & PERFCOUNTER_LONGRUNAVG) {
-        f->open_object_section(d->name);
-        pair<uint64_t,uint64_t> a = d->read_avg();
-        if (d->type & PERFCOUNTER_U64) {
-          f->dump_unsigned("avgcount", a.second);
-          f->dump_unsigned("sum", a.first);
-        } else if (d->type & PERFCOUNTER_TIME) {
-          f->dump_unsigned("avgcount", a.second);
-          f->dump_format_unquoted("sum", "%" PRId64 ".%09" PRId64,
-                                  a.first / 1000000000ull,
-                                  a.first % 1000000000ull);
+	f->open_object_section(d->name);
+	pair<uint64_t,uint64_t> a = d->read_avg();
+	if (d->type & PERFCOUNTER_U64) {
+	  f->dump_unsigned("avgcount", a.second);
+	  f->dump_unsigned("sum", a.first);
+	} else if (d->type & PERFCOUNTER_TIME) {
+	  f->dump_unsigned("avgcount", a.second);
+	  f->dump_format_unquoted("sum", "%" PRId64 ".%09" PRId64,
+				  a.first / 1000000000ull,
+				  a.first % 1000000000ull);
           uint64_t count = a.second;
           uint64_t sum_ns = a.first;
           if (count) {
@@ -482,10 +482,10 @@ void PerfCounters::dump_formatted_generic(Formatter *f, bool schema,
           } else {
             f->dump_format_unquoted("avgtime", "%" PRId64 ".%09" PRId64, 0, 0);
           }
-        } else {
-          ceph_abort();
-        }
-        f->close_section();
+	} else {
+	  ceph_abort();
+	}
+	f->close_section();
       } else if (d->type & PERFCOUNTER_HISTOGRAM) {
         ceph_assert(d->type == (PERFCOUNTER_HISTOGRAM | PERFCOUNTER_COUNTER | PERFCOUNTER_U64));
         ceph_assert(d->histogram);
@@ -493,16 +493,16 @@ void PerfCounters::dump_formatted_generic(Formatter *f, bool schema,
         d->histogram->dump_formatted(f);
         f->close_section();
       } else {
-        uint64_t v = d->u64;
-        if (d->type & PERFCOUNTER_U64) {
-          f->dump_unsigned(d->name, v);
-        } else if (d->type & PERFCOUNTER_TIME) {
-          f->dump_format_unquoted(d->name, "%" PRId64 ".%09" PRId64,
-                                  v / 1000000000ull,
-                                  v % 1000000000ull);
-        } else {
-          ceph_abort();
-        }
+	uint64_t v = d->u64;
+	if (d->type & PERFCOUNTER_U64) {
+	  f->dump_unsigned(d->name, v);
+	} else if (d->type & PERFCOUNTER_TIME) {
+	  f->dump_format_unquoted(d->name, "%" PRId64 ".%09" PRId64,
+				  v / 1000000000ull,
+				  v % 1000000000ull);
+	} else {
+	  ceph_abort();
+	}
       }
     }
   }
