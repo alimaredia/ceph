@@ -252,10 +252,4 @@ For example, the below counters for the RGW show put and get byte statistics for
     }
   }
 
-A daemon's perf counters cache is stored in memory. Since the number of labeled perf counter instances can grow very quickly, eviction can be configured and is recommended to be turned on. 
-
-Eviction in the perf counters cache should be set with a config variable in the specific Ceph daemon the counters are being generated from.
-
-Similarly a config variable in a Ceph daemon should set the number of labled perf counter instances that are stored in the cache before eviction. Once the size of the cache has been reached the least recently accessed counters are evicted first.
-
-Labeled perf counters can be accessed with ``ceph {daemon id} labeledperf dump`` and their schema can be viewed with ``ceph {daemon id} labeledperf schema``.
+Labeled perf counters can be viewed with ``ceph {daemon id} perf dump labeled`` and all labeled counter's schema can be viewed with ``ceph {daemon id} perf schema labeled``.
