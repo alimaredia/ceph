@@ -1,3 +1,5 @@
+nuke-on-error: false
+interactive-on-error: true
 tasks:
 - ragweed:
     client.0:
