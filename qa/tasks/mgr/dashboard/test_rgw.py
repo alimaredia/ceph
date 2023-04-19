@@ -41,7 +41,7 @@ class RgwTestCase(DashboardTestCase):
             ])
             cls._radosgw_admin_cmd([
                 'caps', 'add', '--uid', 'teuth-test-user', '--caps',
-                'metadata=write;keys=*;'
+                'metadata=write;keys=read;'
             ])
             cls._radosgw_admin_cmd([
                 'subuser', 'create', '--uid', 'teuth-test-user', '--subuser',
