@@ -1,5 +1,6 @@
 overrides:
   ceph:
+    wait-for-healthy: false
     conf:
       client:
         setuser: ceph
