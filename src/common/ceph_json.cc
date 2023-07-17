@@ -640,6 +640,10 @@ JSONFormattable& JSONFormattable::operator[](size_t index)
   return arr[index];
 }
 
+bool JSONFormattable::empty() {
+  return arr.empty() && obj.empty();
+}
+
 bool JSONFormattable::exists(const string& name) const
 {
   auto i = obj.find(name);

@@ -1126,6 +1126,8 @@ static int read_or_create_default_zone(const DoutPrefixProvider* dpp,
   if (r == -ENOENT) {
     info.name = default_zone_name;
     constexpr bool exclusive = true;
+    // default sal config for default zone
+    info.sal_config = DriverManager::get_default_sal_config();
     r = create_zone(dpp, y, cfgstore, exclusive, info, nullptr);
     if (r == -EEXIST) {
       r = cfgstore->read_zone_by_name(dpp, y, default_zone_name, info, nullptr);
@@ -1195,6 +1197,7 @@ int SiteConfig::load(const DoutPrefixProvider* dpp, optional_yield y,
 
   // try to load the local zone params
   std::string zone_name = dpp->get_cct()->_conf->rgw_zone;
+  ldpp_dout(dpp, 0) << "ALI zone_name is: " << zone_name << dendl;
   if (!zone_name.empty()) {
     r = cfgstore->read_zone_by_name(dpp, y, zone_name, zone_params, nullptr);
   } else if (realm) {
@@ -1202,6 +1205,7 @@ int SiteConfig::load(const DoutPrefixProvider* dpp, optional_yield y,
     r = cfgstore->read_default_zone(dpp, y, realm->id, zone_params, nullptr);
   } else {
     // load or create the "default" zone
+    ldpp_dout(dpp, 0) << "loading or creating default zone" << dendl;
     r = read_or_create_default_zone(dpp, y, cfgstore, zone_params);
   }
   if (r < 0) {

@@ -967,6 +967,8 @@ public:
     return def(def_val);
   }
 
+  bool empty();
+
   bool exists(const std::string& name) const;
   bool exists(size_t index) const;
 

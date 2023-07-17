@@ -2897,7 +2897,7 @@ static int bucket_sync_status(rgw::sal::Driver* driver, const RGWBucketInfo& inf
   return 0;
 }
 
-static void parse_tier_config_param(const string& s, map<string, string, ltstr_nocase>& out)
+static void parse_json_formattable_config_param(const string& s, map<string, string, ltstr_nocase>& out)
 {
   int level = 0;
   string cur_conf;
@@ -3386,6 +3386,7 @@ int main(int argc, const char **argv)
   int check_objects = false;
   RGWBucketAdminOpState bucket_op;
   string infile;
+  string sal_config_file;
   string metadata_key;
   RGWObjVersionTracker objv_tracker;
   string marker;
@@ -3470,6 +3471,10 @@ int main(int argc, const char **argv)
 
   map<string, string, ltstr_nocase> tier_config_add;
   map<string, string, ltstr_nocase> tier_config_rm;
+
+  JSONFormattable init_sal_config;
+  JSONFormattable infile_sal_config;
+  map<string, string, ltstr_nocase> sal_config;
 
   boost::optional<string> index_pool;
   boost::optional<string> data_pool;
@@ -3814,6 +3819,8 @@ int main(int argc, const char **argv)
       caps = val;
     } else if (ceph_argparse_witharg(args, i, &val, "--infile", (char*)NULL)) {
       infile = val;
+    } else if (ceph_argparse_witharg(args, i, &val, "--sal-config-file", (char*)NULL)) {
+      sal_config_file = val;
     } else if (ceph_argparse_witharg(args, i, &val, "--metadata-key", (char*)NULL)) {
       metadata_key = val;
     } else if (ceph_argparse_witharg(args, i, &val, "--marker", (char*)NULL)) {
@@ -3916,9 +3923,11 @@ int main(int argc, const char **argv)
       tier_type = val;
       tier_type_specified = true;
     } else if (ceph_argparse_witharg(args, i, &val, "--tier-config", (char*)NULL)) {
-      parse_tier_config_param(val, tier_config_add);
+      parse_json_formattable_config_param(val, tier_config_add);
     } else if (ceph_argparse_witharg(args, i, &val, "--tier-config-rm", (char*)NULL)) {
-      parse_tier_config_param(val, tier_config_rm);
+      parse_json_formattable_config_param(val, tier_config_rm);
+    } else if (ceph_argparse_witharg(args, i, &val, "--sal-config", (char*)NULL)) {
+      parse_json_formattable_config_param(val, sal_config);
     } else if (ceph_argparse_witharg(args, i, &val, "--index-pool", (char*)NULL)) {
       index_pool = val;
     } else if (ceph_argparse_witharg(args, i, &val, "--data-pool", (char*)NULL)) {
@@ -4246,7 +4255,7 @@ int main(int argc, const char **argv)
     bool need_cache = readonly_ops_list.find(opt_cmd) == readonly_ops_list.end();
     bool need_gc = (gc_ops_list.find(opt_cmd) != gc_ops_list.end()) && !bypass_gc;
 
-    DriverManager::Config cfg = DriverManager::get_config(true, g_ceph_context);
+    //DriverManager::Config cfg = DriverManager::get_config(true, g_ceph_context);
 
     auto config_store_type = g_conf().get_val<std::string>("rgw_config_store");
     cfgstore = DriverManager::create_config_store(dpp(), config_store_type);
@@ -4255,24 +4264,28 @@ int main(int argc, const char **argv)
       return EIO;
     }
 
+    // DriverManager::get_storage() calls below always use config store's sal config
+    init_sal_config = DriverManager::get_default_sal_config();
+
     if (raw_storage_op) {
       driver = DriverManager::get_raw_storage(dpp(),
-					    g_ceph_context,
-					    cfg);
+                                           g_ceph_context,
+                                           init_sal_config);
     } else {
       driver = DriverManager::get_storage(dpp(),
-					g_ceph_context,
-					cfg,
-					false,
-					false,
-					false,
-					false,
-					false,
-                                        false,
-                                        null_yield,
-					need_cache && g_conf()->rgw_cache_enabled,
-					need_gc);
+                                       g_ceph_context,
+                                       init_sal_config,
+                                       false,
+                                       false,
+                                       false,
+                                       false,
+                                       false,
+                                       false,
+                                       null_yield,
+                                       need_cache && g_conf()->rgw_cache_enabled,
+                                       need_gc);
     }
+
     if (!driver) {
       cerr << "couldn't init storage provider" << std::endl;
       return EIO;
@@ -5753,12 +5766,26 @@ int main(int argc, const char **argv)
         zone_params.system_key.id = access_key;
         zone_params.system_key.key = secret_key;
 	zone_params.realm_id = realm_id;
+        zone_params.sal_config = init_sal_config;
         for (const auto& a : tier_config_add) {
           int r = zone_params.tier_config.set(a.first, a.second);
           if (r < 0) {
             cerr << "ERROR: failed to set configurable: " << a << std::endl;
             return EINVAL;
           }
+        }
+
+        if (!sal_config_file.empty()) {
+          int ret = read_decode_json(sal_config_file, infile_sal_config);
+          if (ret < 0) {
+            return 1;
+          }
+        }
+
+        if (!infile_sal_config.empty()) {
+          zone_params.sal_config = infile_sal_config;
+        } else {
+          zone_params.sal_config = init_sal_config;
         }
 
         if (zone_params.realm_id.empty()) {
@@ -6042,6 +6069,15 @@ int main(int argc, const char **argv)
             zone_params.tier_config.erase(rm.first);
             need_zone_update = true;
           }
+        }
+
+        for (auto a : sal_config) {
+          ret = zone_params.sal_config.set(a.first, a.second);
+          if (ret < 0) {
+            cerr << "ERROR: failed to set sal configuration: " << a.first << std::endl;
+            return EINVAL;
+          }
+          need_zone_update = true;
         }
 
         if (need_zone_update) {
