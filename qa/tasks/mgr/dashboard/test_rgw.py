@@ -28,7 +28,8 @@ class RgwTestCase(DashboardTestCase):
         # Create the administrator account.
         cls._radosgw_admin_cmd([
             'user', 'create', '--uid', 'admin', '--display-name', 'admin',
-            '--system', '--access-key', 'admin', '--secret', 'admin'
+            '--system', '--access-key', 'admin', '--secret', 'admin', 
+            '--caps', 'keys=*'
         ])
         # Update the dashboard configuration.
         cls._ceph_cmd_with_secret(['dashboard', 'set-rgw-api-secret-key'], 'admin')
@@ -41,7 +42,7 @@ class RgwTestCase(DashboardTestCase):
             ])
             cls._radosgw_admin_cmd([
                 'caps', 'add', '--uid', 'teuth-test-user', '--caps',
-                'metadata=write;keys=read'
+                'metadata=write;keys=*'
             ])
             cls._radosgw_admin_cmd([
                 'subuser', 'create', '--uid', 'teuth-test-user', '--subuser',
@@ -134,10 +135,12 @@ class RgwBucketTest(RgwTestCase):
         cls._radosgw_admin_cmd([
             'user', 'create', '--tenant', 'testx', '--uid', 'teuth-test-user',
             '--display-name', 'tenanted teuth-test-user'
+            '--caps', 'keys=*'
         ])
         cls._radosgw_admin_cmd([
             'user', 'create', '--tenant', 'testx2', '--uid', 'teuth-test-user2',
             '--display-name', 'tenanted teuth-test-user 2'
+            '--caps', 'keys=*'
         ])
 
     @classmethod
@@ -540,7 +543,8 @@ class RgwUserTest(RgwTestCase):
         # Create a new user.
         self._post('/api/rgw/user', params={
             'uid': 'teuth-test-user',
-            'display_name': 'display name'
+            'display_name': 'display name',
+            'caps': 'keys=*'
         })
         self.assertStatus(201)
         data = self.jsonBody()
@@ -583,7 +587,8 @@ class RgwUserTest(RgwTestCase):
             '/api/rgw/user',
             params={
                 'uid': 'test01$teuth-test-user',
-                'display_name': 'display name'
+                'display_name': 'display name',
+                'caps': 'keys=*'
             })
         self.assertStatus(201)
         data = self.jsonBody()
@@ -636,6 +641,8 @@ class RgwUserCapabilityTest(RgwTestCase):
             params={
                 'type': 'usage',
                 'perm': 'read'
+                'type': 'keys',
+                'perm': '*'
             })
         self.assertStatus(201)
         data = self.jsonBody()
@@ -647,7 +654,7 @@ class RgwUserCapabilityTest(RgwTestCase):
         # Get the user data to validate the capabilities.
         data = self.get_rgw_user('teuth-test-user')
         self.assertStatus(200)
-        self.assertGreaterEqual(len(data['caps']), 1)
+        self.assertGreaterEqual(len(data['caps']), 2)
         self.assertEqual(data['caps'][0]['type'], 'usage')
         self.assertEqual(data['caps'][0]['perm'], 'read')
 
