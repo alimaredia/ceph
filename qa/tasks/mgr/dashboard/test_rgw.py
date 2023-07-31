@@ -134,12 +134,12 @@ class RgwBucketTest(RgwTestCase):
         # Create tenanted users.
         cls._radosgw_admin_cmd([
             'user', 'create', '--tenant', 'testx', '--uid', 'teuth-test-user',
-            '--display-name', 'tenanted teuth-test-user'
+            '--display-name', 'tenanted teuth-test-user',
             '--caps', 'keys=*'
         ])
         cls._radosgw_admin_cmd([
             'user', 'create', '--tenant', 'testx2', '--uid', 'teuth-test-user2',
-            '--display-name', 'tenanted teuth-test-user 2'
+            '--display-name', 'tenanted teuth-test-user 2',
             '--caps', 'keys=*'
         ])
 
@@ -640,7 +640,7 @@ class RgwUserCapabilityTest(RgwTestCase):
             '/api/rgw/user/teuth-test-user/capability',
             params={
                 'type': 'usage',
-                'perm': 'read'
+                'perm': 'read',
                 'type': 'keys',
                 'perm': '*'
             })
