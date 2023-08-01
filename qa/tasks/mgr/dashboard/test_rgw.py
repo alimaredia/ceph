@@ -663,7 +663,9 @@ class RgwUserCapabilityTest(RgwTestCase):
             '/api/rgw/user/teuth-test-user/capability',
             params={
                 'type': 'metadata',
-                'perm': 'write'
+                'perm': 'write',
+                'type': 'keys',
+                'perm': '*'
             })
         self.assertStatus(204)
 
