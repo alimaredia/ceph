@@ -119,18 +119,16 @@ void DaemonMetricCollector::dump_asok_metrics() {
     json_object counter_dump = boost::json::parse(counter_dump_response).as_object();
     json_object counter_schema = boost::json::parse(counter_schema_response).as_object();
 
-    for (auto &perf_group_item : counter_schema) {
+    for (auto &perf_group_item : counter_dump) {
       std::string perf_group = {perf_group_item.key().begin(),
                                 perf_group_item.key().end()};
-      json_array perf_group_schema_array = perf_group_item.value().as_array();
-      json_array perf_group_dump_array = counter_dump[perf_group].as_array();
-      for (auto schema_itr = perf_group_schema_array.begin(),
-                dump_itr = perf_group_dump_array.begin();
-           schema_itr != perf_group_schema_array.end() &&
+      json_array perf_group_schema_array = counter_schema[perf_group].as_array();
+      json_object perf_group_schema = perf_group_schema_array.begin()->as_object();
+      json_array perf_group_dump_array = perf_group_item.value().as_array();
+      for (auto dump_itr = perf_group_dump_array.begin();
            dump_itr != perf_group_dump_array.end();
-           ++schema_itr, ++dump_itr) {
-        auto counters = schema_itr->at("counters").as_object();
-        auto counters_labels = schema_itr->at("labels").as_object();
+           ++dump_itr) {
+        auto counters_labels = dump_itr->at("labels").as_object();
         auto counters_values = dump_itr->at("counters").as_object();
         labels_t labels;
 
@@ -138,12 +136,12 @@ void DaemonMetricCollector::dump_asok_metrics() {
           std::string label_key = {label.key().begin(), label.key().end()};
           labels[label_key] = quote(label.value().as_string().c_str());
         }
-        for (auto &counter : counters) {
-          json_object counter_group = counter.value().as_object();
-          if (counter_group["priority"].as_int64() < prio_limit) {
+        for (auto &counter : counters_values) {
+          std::string counter_name_init =  {counter.key().begin(), counter.key().end()};
+          json_object counter_schema = perf_group_schema[counter_name_init].as_object();
+          if (counter_schema["priority"].as_int64() < prio_limit) {
             continue;
           }
-          std::string counter_name_init =  {counter.key().begin(), counter.key().end()};
           std::string counter_name = perf_group + "_" + counter_name_init;
           promethize(counter_name);
 
@@ -162,10 +160,7 @@ void DaemonMetricCollector::dump_asok_metrics() {
             labels.insert(multisite_labels_and_name.first.begin(), multisite_labels_and_name.first.end());
             counter_name = multisite_labels_and_name.second;
           }
-          if (counters_values.find(counter_name_init) != counters_values.end()) {
-            auto perf_values = counters_values.at(counter_name_init);
-            dump_asok_metric(counter_group, perf_values, counter_name, labels);
-          }
+          dump_asok_metric(counter_schema, counter.value(), counter_name, labels);
         }
       }
     }
