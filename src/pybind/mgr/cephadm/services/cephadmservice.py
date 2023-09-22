@@ -1035,16 +1035,32 @@ class RgwService(CephService):
             ret, out, err = self.mgr.check_mon_command({
                     'prefix': 'config set',
                     'who': utils.name_to_config_section(daemon_spec.name()),
-                    'name': 'rgw_perf_counters_cache',
+                    'name': 'rgw_user_counters_cache',
                     'value': 'true',
             })
 
-        if spec.rgw_perf_counters_cache_size:
+        if 'prometheus' in mgr_map.get('services', {}):
             ret, out, err = self.mgr.check_mon_command({
                     'prefix': 'config set',
                     'who': utils.name_to_config_section(daemon_spec.name()),
-                    'name': 'rgw_perf_counters_cache_size',
-                    'value': spec.rgw_perf_counters_cache_size,
+                    'name': 'rgw_bucket_counters_cache',
+                    'value': 'true',
+            })
+
+        if spec.rgw_user_counters_cache_size:
+            ret, out, err = self.mgr.check_mon_command({
+                    'prefix': 'config set',
+                    'who': utils.name_to_config_section(daemon_spec.name()),
+                    'name': 'rgw_user_counters_cache_size',
+                    'value': spec.rgw_user_counters_cache_size,
+            })
+
+        if spec.rgw_bucket_counters_cache_size:
+            ret, out, err = self.mgr.check_mon_command({
+                    'prefix': 'config set',
+                    'who': utils.name_to_config_section(daemon_spec.name()),
+                    'name': 'rgw_bucket_counters_cache_size',
+                    'value': spec.rgw_bucket_counters_cache_size,
             })
 
         daemon_spec.keyring = keyring
