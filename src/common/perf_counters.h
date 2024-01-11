@@ -250,9 +250,9 @@ public:
                       const std::string &counter = "") const {
     dump_formatted_generic(f, schema, false, dump_labeled, counter);
   }
-  void dump_formatted_histograms(ceph::Formatter *f, bool schema,
+  void dump_formatted_histograms(ceph::Formatter *f, bool schema, bool dump_labeled,
                                  const std::string &counter = "") const {
-    dump_formatted_generic(f, schema, true, false, counter);
+    dump_formatted_generic(f, schema, true, dump_labeled, counter);
   }
   std::pair<uint64_t, uint64_t> get_tavg_ns(int idx) const;
 
@@ -330,10 +330,10 @@ public:
     dump_formatted_generic(f, schema, false, dump_labeled, logger, counter);
   }
 
-  void dump_formatted_histograms(ceph::Formatter *f, bool schema,
+  void dump_formatted_histograms(ceph::Formatter *f, bool schema, bool dump_labeled,
                                  const std::string &logger = "",
                                  const std::string &counter = "") const {
-    dump_formatted_generic(f, schema, true, false, logger, counter);
+    dump_formatted_generic(f, schema, true, dump_labeled, logger, counter);
   }
 
   // A reference to a perf_counter_data_any_d, with an accompanying

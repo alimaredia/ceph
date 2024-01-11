@@ -23,7 +23,7 @@ public:
   void dump_formatted(ceph::Formatter *f, bool schema, bool dump_labeled,
                       const std::string &logger = "",
                       const std::string &counter = "");
-  void dump_formatted_histograms(ceph::Formatter *f, bool schema,
+  void dump_formatted_histograms(ceph::Formatter *f, bool schema, bool dump_labeled,
                                  const std::string &logger = "",
                                  const std::string &counter = "");
 

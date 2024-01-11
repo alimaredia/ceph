@@ -145,6 +145,11 @@ void PerfCountersCollectionImpl::dump_formatted_generic(
         if (!prev_key_name.empty()) {
           f->close_section(); // array section
         }
+        // WARNING: THIS DOES NOT COMPILE BUT WE WOULD LIKE SOMETHING LIKE IT
+        // TO KEEP THE RESULTS OF HISTOGRAM DUMP CLEAN
+        if ((*l)->type != PERFCOUNTER_HISTOGRAM && histograms) {
+          continue;
+        }
         prev_key_name = key_name;
 
         f->open_array_section(key_name);

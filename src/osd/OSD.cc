@@ -3124,7 +3124,7 @@ will start to track new ops received afterwards.";
     cmd_getval(cmdmap, "logger", logger);
     cmd_getval(cmdmap, "counter", counter);
     cct->get_perfcounters_collection()->dump_formatted_histograms(
-      f, false, logger, counter);
+      f, false, false, logger, counter);
   }
 
   else if (prefix == "trim stale osdmaps") {
