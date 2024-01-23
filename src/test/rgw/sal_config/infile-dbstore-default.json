@@ -1,0 +1,5 @@
+{
+  "db_dir": "/var/lib/ceph/radosgw",
+  "db_name_prefix": "dbstore",
+  "type": "dbstore"
+}

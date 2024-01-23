@@ -1,0 +1,5 @@
+{
+  "db_dir": "/home/fedora/dbstore_dir/",
+  "db_name_prefix": "foo",
+  "type": "dbstore"
+}

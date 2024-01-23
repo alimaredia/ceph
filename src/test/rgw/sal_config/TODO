@@ -1,0 +1,4 @@
+1. pass in the dbstore dir
+2. autogenerate the sal configs based on dbstore dirs
+3. autogenerate the rgw_ceph.conf based on $pwd
+4. go down testing program again and make sure everything could be run locally on any machine
