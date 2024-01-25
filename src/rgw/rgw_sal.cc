@@ -122,6 +122,11 @@ rgw::sal::Driver* DriverManager::read_rados_config(const DoutPrefixProvider* dpp
   if (raw_storage) {
     rados->set_context(cct);
 
+    if (rados->init_rados() < 0) {
+      delete driver;
+      return nullptr;
+    }
+
     int ret = rados->init_svc(true, dpp);
     if (ret < 0) {
       ldout(cct, 0) << "ERROR: failed to init services (ret=" << cpp_strerror(-ret) << ")" << dendl;
@@ -129,10 +134,6 @@ rgw::sal::Driver* DriverManager::read_rados_config(const DoutPrefixProvider* dpp
       return nullptr;
     }
 
-    if (rados->init_rados() < 0) {
-      delete driver;
-      return nullptr;
-    }
     if (driver->initialize(cct, dpp) < 0) {
       delete driver;
       return nullptr;

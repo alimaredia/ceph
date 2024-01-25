@@ -1123,7 +1123,9 @@ static int read_or_create_default_zone(const DoutPrefixProvider* dpp,
                                        RGWZoneParams& info)
 {
   int r = cfgstore->read_zone_by_name(dpp, y, default_zone_name, info, nullptr);
+  ldpp_dout(dpp, 0) << "ALI: in the conditional in read_or_create_default_zone() #1 : r is " << r << dendl;
   if (r == -ENOENT) {
+    ldpp_dout(dpp, 0) << "ALI: in the conditional in read_or_create_default_zone() #2" << dendl;
     info.name = default_zone_name;
     constexpr bool exclusive = true;
     // default sal config for default zone
@@ -1137,6 +1139,9 @@ static int read_or_create_default_zone(const DoutPrefixProvider* dpp,
           << cpp_strerror(r) << dendl;
       return r;
     }
+  } else if (info.sal_config.empty()) {
+    ldpp_dout(dpp, 0) << "ALI: setting the default sal cofig" << dendl;
+    info.sal_config = DriverManager::get_default_sal_config();
   }
   return r;
 }
