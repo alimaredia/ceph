@@ -109,7 +109,6 @@ class PutObjects {
     jcksum.secret_key = System.getProperty("AWS_SECRET_ACCESS_KEY", "h7GhxuBLTrlhVUyxSPUKUV8r/2EI4ngqJxD7iBdBYLhwluN30JaT3Q==");
 
     jcksum.http_endpoint = System.getProperty("RGW_HTTP_ENDPOINT_URL", "http://192.168.111.1:8000");
-    jcksum.http_endpoint = System.getProperty("RGW_HTTPS_ENDPOINT_URL", "https://192.168.111.1:8443");
   } /* readEnvironmentVArs */
 
 	void generateBigFiles() {
