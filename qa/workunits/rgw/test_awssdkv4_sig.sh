@@ -7,7 +7,10 @@
 # Example when ceph source is cloned into $HOME and a vstart cluster is already running with a radosgw:
 # $ PATH=~/ceph/build/bin/:$PATH KEYRING=~/ceph/build/keyring ~/ceph/qa/workunits/rgw/test_awssdkv4_sig.sh
 #
+
 set -x
+
+CEPH_ROOT=$1
 
 if [ -z ${AWS_ACCESS_KEY_ID} ]
 then
