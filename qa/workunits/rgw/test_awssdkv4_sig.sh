@@ -6,6 +6,8 @@
 #
 # Example when ceph source is cloned into $HOME and a vstart cluster is already running with a radosgw:
 # $ PATH=~/ceph/build/bin/:$PATH KEYRING=~/ceph/build/keyring ~/ceph/qa/workunits/rgw/test_awssdkv4_sig.sh
+#
+set -x
 
 if [ -z ${AWS_ACCESS_KEY_ID} ]
 then
@@ -43,6 +45,7 @@ if [ -z ${CEPH_ROOT} ]
 then
   cd $CEPH_ROOT/qa/workunits/rgw/jcksum
 else
+  echo "CEPH_ROOT is not defined"
   cd jcksum
 fi
 
