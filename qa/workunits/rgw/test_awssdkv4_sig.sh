@@ -39,7 +39,12 @@ export RGW_HTTP_ENDPOINT_URL="http://localhost:80"
 #export RGW_HTTPS_ENDPOINT_URL="https://localhost:443"
 
 # rgw/test_awssdkv4_sig.sh
-pushd jcksum
+if [ -z ${CEPH_ROOT} ]
+then
+  cd $CEPH_ROOT/qa/workunits/rgw/jcksum
+else
+  cd jcksum
+fi
 
 ./mvnw clean package
 ./mvnw test -Dtest=PutObjects
