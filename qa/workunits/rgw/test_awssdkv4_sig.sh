@@ -38,7 +38,7 @@ fi
 # it may already be set before this script runs, though if we can figure it
 # out, it's ok if we set it...
 
-export RGW_HTTP_ENDPOINT_URL="http://localhost:80"
+#export RGW_HTTP_ENDPOINT_URL="http://localhost:80"
 #export RGW_HTTPS_ENDPOINT_URL="https://localhost:443"
 
 # rgw/test_awssdkv4_sig.sh

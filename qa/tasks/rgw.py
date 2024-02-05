@@ -443,6 +443,17 @@ def task(ctx, config):
 
     ctx.rgw.role_endpoints = assign_endpoints(ctx, config, default_cert)
 
+    for client in clients:
+        url = ctx.rgw.role_endpoints[client].url()
+        ctx.cluster.only(client).run(args=['export', 'RGW_HTTP_ENDPOINT_URL={url}'.format(url=url)])
+        log.info('RGW_HTTP_ENDPOINT is {url}'.format(url=url))
+        #if ctx.rgw.role_endpoints[client].port == 80:
+            #ctx.cluster.only(client).run(args=['export', 'RGW_HTTP_ENDPOINT_URL={url}'.format(url=url)])
+            #log.info('RGW_HTTP_ENDPOINT is {url}'.format(url=url))
+        #else:
+            #ctx.cluster.only(client).run(args=['export', 'RGW_HTTP_ENDPOINT_URL={url}'.format(url=url)])
+            #log.info('RGW_HTTP_ENDPOINT is {url}'.format(url=url))
+
     subtasks = [
         lambda: create_pools(ctx=ctx, clients=clients),
     ]
