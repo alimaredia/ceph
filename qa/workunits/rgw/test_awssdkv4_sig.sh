@@ -10,8 +10,6 @@
 
 set -x
 
-CEPH_ROOT=$1
-
 if [ -z ${AWS_ACCESS_KEY_ID} ]
 then
     export AWS_ACCESS_KEY_ID=`openssl rand -base64 20`
@@ -46,10 +44,10 @@ export RGW_HTTP_ENDPOINT_URL="http://localhost:80"
 # rgw/test_awssdkv4_sig.sh
 if [ -z ${CEPH_ROOT} ]
 then
-  cd $CEPH_ROOT/qa/workunits/rgw/jcksum
-else
   echo "CEPH_ROOT is not defined"
   cd jcksum
+else
+  cd $CEPH_ROOT/qa/workunits/rgw/jcksum
 fi
 
 ./mvnw clean package
