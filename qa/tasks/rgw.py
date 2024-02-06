@@ -448,7 +448,7 @@ def task(ctx, config):
         url = ctx.rgw.role_endpoints[client].url()
         testdir = teuthology.get_testdir(ctx)
         url_file = '{tdir}/url_file'.format(tdir=testdir),
-        ctx.cluster.only(client).run(args=['sudo', 'echo', '-n', url, run.Raw('|'), 'sudo', 'tee', url_file])
+        ctx.cluster.only(client).run(args=['sudo', 'echo', '-n', '{url}'.format(url=url), run.Raw('|'), 'sudo', 'tee', '{file}'.format(file=url_file)])
         ctx.cluster.only(client).run(args=['sudo', 'chown', 'ceph', url_file])
         log.info("url file content")
         ctx.cluster.only(client).run(args=['cat', url_file])
