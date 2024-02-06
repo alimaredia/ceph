@@ -40,6 +40,8 @@ fi
 
 #export RGW_HTTP_ENDPOINT_URL="http://localhost:80"
 #export RGW_HTTPS_ENDPOINT_URL="https://localhost:443"
+echo $CEPH_ROOT
+echo $RGW_HTTP_ENDPOINT_URL
 
 # rgw/test_awssdkv4_sig.sh
 if [ -z ${CEPH_ROOT} ]

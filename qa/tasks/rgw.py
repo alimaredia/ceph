@@ -446,7 +446,7 @@ def task(ctx, config):
     for client in clients:
         url = ctx.rgw.role_endpoints[client].url()
         ctx.cluster.only(client).run(args=['export', 'RGW_HTTP_ENDPOINT_URL={url}'.format(url=url)])
-        log.info('RGW_HTTP_ENDPOINT is {url}'.format(url=url))
+        log.info('RGW_HTTP_ENDPOINT_URL is {url}'.format(url=url))
         #if ctx.rgw.role_endpoints[client].port == 80:
             #ctx.cluster.only(client).run(args=['export', 'RGW_HTTP_ENDPOINT_URL={url}'.format(url=url)])
             #log.info('RGW_HTTP_ENDPOINT is {url}'.format(url=url))
