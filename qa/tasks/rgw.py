@@ -4,6 +4,7 @@ rgw routines
 import argparse
 import contextlib
 import logging
+import os
 
 from teuthology.orchestra import run
 from teuthology import misc as teuthology
