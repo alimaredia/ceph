@@ -41,9 +41,18 @@ fi
 #export RGW_HTTP_ENDPOINT_URL="http://localhost:80"
 #export RGW_HTTPS_ENDPOINT_URL="https://localhost:443"
 echo $CEPH_ROOT
+echo $TESTDIR
+ls $TESTDIR
+
+if [ -z ${TESTDIR} ]
+then
+  echo "TESTDIR is not defined, cannot set RGW_HTTP_ENDPOINT_URL"
+  exit
+else
+  export RGW_HTTP_ENDPOINT_URL=$(cat ${TESTDIR}/url_file)
+fi
+
 echo $RGW_HTTP_ENDPOINT_URL
-sudo cat /tmp/url_file
-sudo rm /tmp/url_file
 
 # rgw/test_awssdkv4_sig.sh
 if [ -z ${CEPH_ROOT} ]
