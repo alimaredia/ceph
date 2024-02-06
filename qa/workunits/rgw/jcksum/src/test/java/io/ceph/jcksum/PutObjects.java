@@ -134,6 +134,10 @@ class PutObjects {
 
     readEnvironmentVars();
 
+    System.out.println("PutObjects.java: starting test run:");
+    System.out.println("\tAccessKey=" + jcksum.access_key);
+    System.out.println("\tEndpointUrl=" + jcksum.http_endpoint);
+
 		creds = AwsBasicCredentials.create(jcksum.access_key, jcksum.secret_key);
 		http_uri = new URI(jcksum.http_endpoint);
 
