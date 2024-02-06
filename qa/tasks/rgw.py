@@ -446,12 +446,16 @@ def task(ctx, config):
 
     for client in clients:
         url = ctx.rgw.role_endpoints[client].url()
+        if url[-1] == '/':
+            url = url[:-1]
+            log.info("traling slash in url removed")
+        log.info("url is: {url}".format(url=url))
         testdir = teuthology.get_testdir(ctx)
         url_file = '{tdir}/url_file'.format(tdir=testdir)
         log.info("url file path is: {file}".format(file=url_file))
         ctx.cluster.only(client).run(args=['sudo', 'echo', '-n', '{url}'.format(url=url), run.Raw('|'), 'sudo', 'tee', url_file])
         ctx.cluster.only(client).run(args=['sudo', 'chown', 'ceph', url_file])
-        log.info("url file content")
+        log.info("url file content is:")
         ctx.cluster.only(client).run(args=['cat', url_file])
 
     subtasks = [
