@@ -446,15 +446,10 @@ def task(ctx, config):
 
     for client in clients:
         url = ctx.rgw.role_endpoints[client].url()
-        os.environ['RGW_HTTP_ENDPOINT_URL']=url
-        log.info('RGW_HTTP_ENDPOINT_URL is {url}'.format(url=url))
-        ctx.cluster.only(client).run(args=['echo', '$RGW_HTTP_ENDPOINT_URL'])
-        #if ctx.rgw.role_endpoints[client].port == 80:
-            #ctx.cluster.only(client).run(args=['export', 'RGW_HTTP_ENDPOINT_URL={url}'.format(url=url)])
-            #log.info('RGW_HTTP_ENDPOINT is {url}'.format(url=url))
-        #else:
-            #ctx.cluster.only(client).run(args=['export', 'RGW_HTTP_ENDPOINT_URL={url}'.format(url=url)])
-            #log.info('RGW_HTTP_ENDPOINT is {url}'.format(url=url))
+        url_file = '/tmp/url_file'
+        ctx.cluster.only(client).run(args=['sudo', 'echo', '-n', url, run.Raw('|'), 'sudo', 'tee', url_file])
+        log.info("url file content")
+        ctx.cluster.only(client).run(args=['cat', url_file])
 
     subtasks = [
         lambda: create_pools(ctx=ctx, clients=clients),
