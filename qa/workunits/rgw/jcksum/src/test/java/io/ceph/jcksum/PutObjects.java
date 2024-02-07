@@ -136,6 +136,7 @@ class PutObjects {
 
     System.out.println("PutObjects.java: starting test run:");
     System.out.println("\tAccessKey=" + jcksum.access_key);
+    System.out.println("\tSecretKey=" + jcksum.secret_key);
     System.out.println("\tEndpointUrl=" + jcksum.http_endpoint);
 
 		creds = AwsBasicCredentials.create(jcksum.access_key, jcksum.secret_key);
@@ -146,10 +147,11 @@ class PutObjects {
 		
 		/* https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Client.html */
         client = S3Client.builder()
-        		.endpointOverride(http_uri)
-                .credentialsProvider(StaticCredentialsProvider.create(creds))
-                .region(jcksum.region)
-                .build();
+          .endpointOverride(http_uri)
+          .credentialsProvider(StaticCredentialsProvider.create(creds))
+          .region(jcksum.region)
+          .forcePathStyle(true)
+          .build();
 
     generateBigFiles();
 
