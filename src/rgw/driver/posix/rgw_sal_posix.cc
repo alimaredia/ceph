@@ -2821,17 +2821,19 @@ int POSIXMultipartWriter::complete(size_t accounted_size, const std::string& eta
   POSIXUploadPartInfo info;
 
   if (if_match) {
-    if (strcmp(if_match, "*") == 0) {
+    std::string if_match_str = rgw_string_unquote(if_match);
+    if (if_match_str == "*") {
       // test the object is existing
       if (!obj->exists(dpp)) {
         return -ERR_PRECONDITION_FAILED;
       }
     } else {
-      bufferlist bl;
-      if (!get_attr(obj->get_attrs(), RGW_ATTR_ETAG, bl)) {
+      bufferlist etag_bl;
+      if (!get_attr(obj->get_attrs(), RGW_ATTR_ETAG, etag_bl)) {
         return -ERR_PRECONDITION_FAILED;
       }
-      if (strncmp(if_match, bl.c_str(), bl.length()) != 0) {
+      ldpp_dout(dpp, 10) << "If-Match: " << if_match_str << " ETAG: " << etag_bl.c_str() << dendl;
+      if (if_match_str.compare(0, etag_bl.length(), etag_bl.c_str(), etag_bl.length()) != 0) {
         return -ERR_PRECONDITION_FAILED;
       }
     }
@@ -2888,33 +2890,37 @@ int POSIXAtomicWriter::complete(size_t accounted_size, const std::string& etag,
   int ret;
 
   if (if_match) {
-    if (strcmp(if_match, "*") == 0) {
+    std::string if_match_str = rgw_string_unquote(if_match);
+    if (if_match_str == "*") {
       // test the object is existing
       if (!obj.exists(dpp)) {
-	return -ERR_PRECONDITION_FAILED;
+	      return -ERR_PRECONDITION_FAILED;
       }
     } else {
-      bufferlist bl;
-      if (!get_attr(obj.get_attrs(), RGW_ATTR_ETAG, bl)) {
+      bufferlist etag_bl;
+      if (!get_attr(obj.get_attrs(), RGW_ATTR_ETAG, etag_bl)) {
         return -ERR_PRECONDITION_FAILED;
       }
-      if (strncmp(if_match, bl.c_str(), bl.length()) != 0) {
+      ldpp_dout(dpp, 10) << "If-Match: " << if_match_str << " ETAG: " << etag_bl.c_str() << dendl;
+      if (if_match_str.compare(0, etag_bl.length(), etag_bl.c_str(), etag_bl.length()) != 0) {
         return -ERR_PRECONDITION_FAILED;
       }
     }
   }
   if (if_nomatch) {
-    if (strcmp(if_nomatch, "*") == 0) {
+    std::string if_nomatch_str = rgw_string_unquote(if_nomatch);
+    if (if_nomatch_str == "*") {
       // test the object is not existing
       if (obj.exists(dpp)) {
-	return -ERR_PRECONDITION_FAILED;
-      }
-    } else {
-      bufferlist bl;
-      if (!get_attr(obj.get_attrs(), RGW_ATTR_ETAG, bl)) {
         return -ERR_PRECONDITION_FAILED;
       }
-      if (strncmp(if_nomatch, bl.c_str(), bl.length()) == 0) {
+    } else {
+      bufferlist etag_bl;
+      if (!get_attr(obj.get_attrs(), RGW_ATTR_ETAG, etag_bl)) {
+        return -ERR_PRECONDITION_FAILED;
+      }
+      ldpp_dout(dpp, 10) << "ETag: " << std::string(etag_bl.c_str(), etag_bl.length()) << " " << " If-NoMatch: " << if_nomatch_str << dendl;
+      if (if_nomatch_str.compare(0, etag_bl.length(), etag_bl.c_str(), etag_bl.length()) == 0) {
         return -ERR_PRECONDITION_FAILED;
       }
     }

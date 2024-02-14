@@ -6380,15 +6380,19 @@ int RGWRados::Object::prepare_atomic_modification(const DoutPrefixProvider *dpp,
     }
 
     if (if_match) {
-      if (strcmp(if_match, "*") == 0) {
+      std::string if_match_str = rgw_string_unquote(if_match);
+      if (if_match_str == "*") {
         // test the object is existing
         if (!state->exists) {
           return -ERR_PRECONDITION_FAILED;
         }
       } else {
-        bufferlist bl;
-        if (!state->get_attr(RGW_ATTR_ETAG, bl) ||
-            strncmp(if_match, bl.c_str(), bl.length()) != 0) {
+        bufferlist etag_bl;
+        if (!state->get_attr(RGW_ATTR_ETAG, etag_bl)) {
+          return -ERR_PRECONDITION_FAILED;
+        }
+        ldpp_dout(dpp, 10) << "If-Match: " << if_match_str << " ETAG: " << etag_bl.c_str() << dendl;
+        if (if_match_str.compare(0, etag_bl.length(), etag_bl.c_str(), etag_bl.length()) != 0) {
           return -ERR_PRECONDITION_FAILED;
         }
       }
