@@ -89,12 +89,14 @@ WRITE_CLASS_ENCODER(rgw_data_change)
 struct rgw_data_change_log_entry {
   std::string log_id;
   ceph::real_time log_timestamp;
+  ceph::real_time last_update;
   rgw_data_change entry;
 
   void encode(ceph::buffer::list& bl) const {
     ENCODE_START(1, 1, bl);
     encode(log_id, bl);
     encode(log_timestamp, bl);
+    encode(last_update, bl);
     encode(entry, bl);
     ENCODE_FINISH(bl);
   }
@@ -103,6 +105,7 @@ struct rgw_data_change_log_entry {
      DECODE_START(1, bl);
      decode(log_id, bl);
      decode(log_timestamp, bl);
+     decode(last_update, bl);
      decode(entry, bl);
      DECODE_FINISH(bl);
   }

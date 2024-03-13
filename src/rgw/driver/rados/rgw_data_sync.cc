@@ -6,6 +6,7 @@
 #include "common/WorkQueue.h"
 #include "common/Throttle.h"
 #include "common/errno.h"
+#include "common/perf_counters_key.h"
 
 #include "rgw_common.h"
 #include "rgw_zone.h"
@@ -1109,21 +1110,28 @@ class RGWDataSyncShardMarkerTrack : public RGWSyncShardMarkerTrack<string, strin
   rgw_data_sync_marker sync_marker;
   RGWSyncTraceNodeRef tn;
   RGWObjVersionTracker& objv;
+  sync_deltas::SyncDeltaCountersManager sync_delta_counters_manager;
 
 public:
   RGWDataSyncShardMarkerTrack(RGWDataSyncCtx *_sc,
+                         const uint32_t shard_id,
                          const string& _marker_oid,
                          const rgw_data_sync_marker& _marker,
                          RGWSyncTraceNodeRef& _tn, RGWObjVersionTracker& objv) : RGWSyncShardMarkerTrack(DATA_SYNC_UPDATE_MARKER_WINDOW),
                                                                 sc(_sc), sync_env(_sc->env),
                                                                 marker_oid(_marker_oid),
                                                                 sync_marker(_marker),
-                                                                tn(_tn), objv(objv) {}
+                                                                tn(_tn), objv(objv),
+                                                                sync_delta_counters_manager(ceph::perf_counters::key_create(rgw_sync_delta_counters_key, {{"source-zone", sync_env->svc->zone->get_zone_params().get_id()}, {"dest-zone", _sc->source_zone.id}, {"shard-id", std::to_string(shard_id)}}), _sc->env->cct) {}
 
-  RGWCoroutine* store_marker(const string& new_marker, uint64_t index_pos, const real_time& timestamp) override {
+  RGWCoroutine* store_marker(const string& new_marker, uint64_t index_pos, const real_time& timestamp, const real_time& last_update) override {
     sync_marker.marker = new_marker;
     sync_marker.pos = index_pos;
     sync_marker.timestamp = timestamp;
+    // TODO: figure out how to get dest-zone's name
+    auto delta = (last_update.time_since_epoch()) - (timestamp.time_since_epoch());
+    sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta);
+    //sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, last_update.time_since_epoch());
 
     tn->log(20, SSTR("updating marker marker_oid=" << marker_oid << " marker=" << new_marker));
 
@@ -1810,7 +1818,7 @@ public:
     reenter(this) {
       tn->log(10, "start full sync");
       oid = full_data_sync_index_shard_oid(sc->source_zone, shard_id);
-      marker_tracker.emplace(sc, status_oid, sync_marker, tn, objv);
+      marker_tracker.emplace(sc, shard_id, status_oid, sync_marker, tn, objv);
       total_entries = sync_marker.pos;
       entry_timestamp = sync_marker.timestamp; // time when full sync started
       do {
@@ -1969,7 +1977,7 @@ public:
   int operate(const DoutPrefixProvider *dpp) override {
     reenter(this) {
       tn->log(10, "start incremental sync");
-      marker_tracker.emplace(sc, status_oid, sync_marker, tn, objv);
+      marker_tracker.emplace(sc, shard_id, status_oid, sync_marker, tn, objv);
       do {
         if (!lease_cr->is_locked()) {
           lost_lock = true;
@@ -2105,7 +2113,7 @@ public:
             continue;
           }
           if (!marker_tracker->start(log_iter->log_id, 0,
-				     log_iter->log_timestamp)) {
+				     log_iter->log_timestamp, log_iter->last_update)) {
             tn->log(0, SSTR("ERROR: cannot start syncing " << log_iter->log_id
 			    << ". Duplicate entry?"));
           } else {
@@ -4228,7 +4236,7 @@ public:
   {}
 
 
-  RGWCoroutine *store_marker(const rgw_obj_key& new_marker, uint64_t index_pos, const real_time& timestamp) override {
+  RGWCoroutine *store_marker(const rgw_obj_key& new_marker, uint64_t index_pos, const real_time& timestamp, const real_time& last_update) override {
     sync_status.full.position = new_marker;
     sync_status.full.count = index_pos;
 
@@ -4329,7 +4337,7 @@ public:
 
   const rgw_raw_obj& get_obj() const { return obj; }
 
-  RGWCoroutine* store_marker(const string& new_marker, uint64_t index_pos, const real_time& timestamp) override {
+  RGWCoroutine* store_marker(const string& new_marker, uint64_t index_pos, const real_time& timestamp, const real_time& last_update) override {
     sync_marker.position = new_marker;
     sync_marker.timestamp = timestamp;
 
