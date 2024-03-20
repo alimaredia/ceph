@@ -301,12 +301,14 @@ struct read_remote_data_log_response {
   string marker;
   bool truncated;
   vector<rgw_data_change_log_entry> entries;
+  real_time last_update;
 
   read_remote_data_log_response() : truncated(false) {}
 
   void decode_json(JSONObj *obj) {
     JSONDecoder::decode_json("marker", marker, obj);
     JSONDecoder::decode_json("truncated", truncated, obj);
+    JSONDecoder::decode_json("last_updated", last_update, obj);
     JSONDecoder::decode_json("entries", entries, obj);
   };
 };
@@ -322,6 +324,7 @@ class RGWReadRemoteDataLogShardCR : public RGWCoroutine {
   string *pnext_marker;
   vector<rgw_data_change_log_entry> *entries;
   bool *truncated;
+  real_time *last_update;
 
   read_remote_data_log_response response;
   std::optional<TOPNSPC::common::PerfGuard> timer;
@@ -333,10 +336,10 @@ public:
   RGWReadRemoteDataLogShardCR(RGWDataSyncCtx *_sc, int _shard_id,
                               const std::string& marker, string *pnext_marker,
                               vector<rgw_data_change_log_entry> *_entries,
-                              bool *_truncated)
+                              bool *_truncated, real_time *_last_update)
     : RGWCoroutine(_sc->cct), sc(_sc), sync_env(_sc->env),
       shard_id(_shard_id), marker(marker), pnext_marker(pnext_marker),
-      entries(_entries), truncated(_truncated) {
+      entries(_entries), truncated(_truncated), last_update(_last_update) {
   }
 
   int operate(const DoutPrefixProvider *dpp) override {
@@ -1129,8 +1132,8 @@ public:
     sync_marker.pos = index_pos;
     sync_marker.timestamp = timestamp;
     // TODO: figure out how to get dest-zone's name
-    auto delta = (last_update.time_since_epoch()) - (timestamp.time_since_epoch());
-    sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta);
+    auto delta = last_update - timestamp;
+    sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta.time_since_last_epoch());
     //sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, last_update.time_since_epoch());
 
     tn->log(20, SSTR("updating marker marker_oid=" << marker_oid << " marker=" << new_marker));
@@ -1936,6 +1939,7 @@ class RGWDataIncSyncShardCR : public RGWDataBaseSyncShardCR {
 
   string next_marker;
   vector<rgw_data_change_log_entry> log_entries;
+  real_time last_update;
   decltype(log_entries)::iterator log_iter;
   bool truncated = false;
   int cbret = 0;
@@ -2082,7 +2086,7 @@ public:
         yield call(new RGWReadRemoteDataLogShardCR(sc, shard_id,
 						   sync_marker.marker,
                                                    &next_marker, &log_entries,
-						   &truncated));
+						   &truncated, &last_update));
         if (retcode < 0 && retcode != -ENOENT) {
           tn->log(0, SSTR("ERROR: failed to read remote data log info: ret="
 			  << retcode));
@@ -2113,7 +2117,7 @@ public:
             continue;
           }
           if (!marker_tracker->start(log_iter->log_id, 0,
-				     log_iter->log_timestamp, log_iter->last_update)) {
+				     log_iter->log_timestamp, last_update)) {
             tn->log(0, SSTR("ERROR: cannot start syncing " << log_iter->log_id
 			    << ". Duplicate entry?"));
           } else {
@@ -3935,6 +3939,7 @@ class RGWReadPendingBucketShardsCoroutine : public RGWCoroutine {
   std::string next_marker;
   vector<rgw_data_change_log_entry> log_entries;
   bool truncated;
+  real_time last_update;
 
 public:
   RGWReadPendingBucketShardsCoroutine(RGWDataSyncCtx *_sc, const int _shard_id,
@@ -3969,7 +3974,7 @@ int RGWReadPendingBucketShardsCoroutine::operate(const DoutPrefixProvider *dpp)
     count = 0;
     do{
       yield call(new RGWReadRemoteDataLogShardCR(sc, shard_id, marker,
-                                                 &next_marker, &log_entries, &truncated));
+                                                 &next_marker, &log_entries, &truncated, &last_update));
 
       if (retcode == -ENOENT) {
         break;
