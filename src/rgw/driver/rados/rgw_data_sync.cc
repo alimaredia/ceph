@@ -308,7 +308,7 @@ struct read_remote_data_log_response {
   void decode_json(JSONObj *obj) {
     JSONDecoder::decode_json("marker", marker, obj);
     JSONDecoder::decode_json("truncated", truncated, obj);
-    JSONDecoder::decode_json("last_updated", last_update, obj);
+    JSONDecoder::decode_json("last_update", last_update, obj);
     JSONDecoder::decode_json("entries", entries, obj);
   };
 };
@@ -401,6 +401,7 @@ public:
         entries->swap(response.entries);
         *pnext_marker = response.marker;
         *truncated = response.truncated;
+        *last_update = response.last_update;
         return set_cr_done();
       }
     }
@@ -1133,7 +1134,8 @@ public:
     sync_marker.timestamp = timestamp;
     // TODO: figure out how to get dest-zone's name
     auto delta = last_update - timestamp;
-    sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta.time_since_last_epoch());
+    sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta);
+    //
     //sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, last_update.time_since_epoch());
 
     tn->log(20, SSTR("updating marker marker_oid=" << marker_oid << " marker=" << new_marker));
@@ -2117,7 +2119,7 @@ public:
             continue;
           }
           if (!marker_tracker->start(log_iter->log_id, 0,
-				     log_iter->log_timestamp, last_update)) {
+				     log_iter->log_timestamp)) {
             tn->log(0, SSTR("ERROR: cannot start syncing " << log_iter->log_id
 			    << ". Duplicate entry?"));
           } else {

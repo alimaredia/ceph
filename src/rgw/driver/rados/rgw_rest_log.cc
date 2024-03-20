@@ -697,11 +697,8 @@ void RGWOp_DATALog_List::execute(optional_yield y) {
     datalog_rados->get_info(this, shard_id, &info, y);
 
   last_update = info.last_update;
-
-  for (auto& entry : entries) {
-    entry.last_update = info.last_update;
-    // TODO: remove logging
-    ldpp_dout(this, 1) << "entry's log_timestamps is: " << entry.log_timestamp << " entry's last_update is: " << entry.last_update << dendl;
+ for (auto& entry : entries) {
+    ldpp_dout(this, 1) << "entry's log_timestamps is: " << entry.log_timestamp << " RGWOp_DATALog_List last_update is: " << last_update << dendl;
   }
 }
 

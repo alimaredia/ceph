@@ -75,8 +75,6 @@ void rgw_data_change_log_entry::dump(Formatter *f) const
   encode_json("log_id", log_id, f);
   utime_t ut(log_timestamp);
   encode_json("log_timestamp", ut, f);
-  utime_t lu(last_update);
-  encode_json("last_update", lu, f);
   encode_json("entry", entry, f);
 }
 
@@ -85,9 +83,6 @@ void rgw_data_change_log_entry::decode_json(JSONObj *obj) {
   utime_t ut;
   JSONDecoder::decode_json("log_timestamp", ut, obj);
   log_timestamp = ut.to_real_time();
-  utime_t lu;
-  JSONDecoder::decode_json("last_update", lu, obj);
-  last_update = lu.to_real_time();
   JSONDecoder::decode_json("entry", entry, obj);
 }
 
@@ -179,8 +174,6 @@ public:
       log_entry.log_id = iter->id;
       auto rt = iter->timestamp.to_real_time();
       log_entry.log_timestamp = rt;
-      //auto rt = iter->last_update.to_real_time();
-      //log_entry.last_update = lu_rt;
       auto liter = iter->data.cbegin();
       try {
 	decode(log_entry.entry, liter);
