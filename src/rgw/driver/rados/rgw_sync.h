@@ -343,9 +343,10 @@ class RGWSyncShardMarkerTrack {
   struct marker_entry {
     uint64_t pos;
     real_time timestamp;
+    real_time last_update;
 
     marker_entry() : pos(0) {}
-    marker_entry(uint64_t _p, const real_time& _ts) : pos(_p), timestamp(_ts) {}
+    marker_entry(uint64_t _p, const real_time& _ts, const real_time& _lu = {}) : pos(_p), timestamp(_ts), last_update(_lu) {}
   };
   typename std::map<T, marker_entry> pending;
 
@@ -371,16 +372,16 @@ public:
     }
   }
 
-  bool start(const T& pos, int index_pos, const real_time& timestamp) {
+  bool start(const T& pos, int index_pos, const real_time& timestamp, const real_time& last_update = {}) {
     if (pending.find(pos) != pending.end()) {
       return false;
     }
-    pending[pos] = marker_entry(index_pos, timestamp);
+    pending[pos] = marker_entry(index_pos, timestamp, last_update);
     return true;
   }
 
-  void try_update_high_marker(const T& pos, int index_pos, const real_time& timestamp) {
-    finish_markers[pos] = marker_entry(index_pos, timestamp);
+  void try_update_high_marker(const T& pos, int index_pos, const real_time& timestamp, const real_time& last_update = {}) {
+    finish_markers[pos] = marker_entry(index_pos, timestamp, last_update);
   }
 
   RGWCoroutine *finish(const T& pos) {
@@ -415,7 +416,7 @@ public:
     return NULL;
   }
 
-  RGWCoroutine *flush(real_time last_update = {}) {
+  RGWCoroutine *flush() {
     if (finish_markers.empty()) {
       return NULL;
     }
@@ -436,7 +437,7 @@ public:
     --i;
     const T& high_marker = i->first;
     marker_entry& high_entry = i->second;
-    RGWCoroutine *cr = order(store_marker(high_marker, high_entry.pos, high_entry.timestamp, last_update));
+    RGWCoroutine *cr = order(store_marker(high_marker, high_entry.pos, high_entry.timestamp, high_entry.last_update));
     finish_markers.erase(finish_markers.begin(), last);
     return cr;
   }

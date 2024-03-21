@@ -308,7 +308,9 @@ struct read_remote_data_log_response {
   void decode_json(JSONObj *obj) {
     JSONDecoder::decode_json("marker", marker, obj);
     JSONDecoder::decode_json("truncated", truncated, obj);
-    JSONDecoder::decode_json("last_update", last_update, obj);
+    utime_t lu;
+    JSONDecoder::decode_json("last_update", lu, obj);
+    last_update = lu.to_real_time();
     JSONDecoder::decode_json("entries", entries, obj);
   };
 };
@@ -403,8 +405,6 @@ public:
         *truncated = response.truncated;
         *last_update = response.last_update;
         ldpp_dout(dpp, 0) << "ALI: last update from response is " << *last_update << " response.last_update is: " << response.last_update << " marker is: " << *pnext_marker << dendl;
-        *last_update = real_clock::now();
-        ldpp_dout(dpp, 0) << "ALI: last update after update is " << *last_update << dendl;
         return set_cr_done();
       }
     }
@@ -1130,6 +1130,13 @@ public:
                                                                 sync_marker(_marker),
                                                                 tn(_tn), objv(objv),
                                                                 sync_delta_counters_manager(ceph::perf_counters::key_create(rgw_sync_delta_counters_key, {{"source-zone", sync_env->svc->zone->get_zone_params().get_id()}, {"dest-zone", _sc->source_zone.id}, {"shard-id", std::to_string(shard_id)}}), _sc->env->cct) {}
+  // TODOs
+  // helper function for sync_delta_counters_manager_initialization
+  // zone service gets zone params - zone service will have period info which contains the zonegroups and zones which look up with a given id and find it's name
+  // labels per source and dest zone, or accumulate all the source zones for a given destination zone
+  // labels aren't meant to be user readable values
+  // will dashboards be by zone?
+  // casey really wants zone id
 
   RGWCoroutine* store_marker(const string& new_marker, uint64_t index_pos, const real_time& timestamp, const real_time& last_update) override {
     sync_marker.marker = new_marker;
@@ -2123,11 +2130,11 @@ public:
             tn->log(1, SSTR("failed to parse bucket shard: "
 			    << log_iter->entry.key));
             marker_tracker->try_update_high_marker(log_iter->log_id, 0,
-						   log_iter->log_timestamp);
+						   log_iter->log_timestamp, last_update);
             continue;
           }
           if (!marker_tracker->start(log_iter->log_id, 0,
-				     log_iter->log_timestamp)) {
+				     log_iter->log_timestamp, last_update)) {
             tn->log(0, SSTR("ERROR: cannot start syncing " << log_iter->log_id
 			    << ". Duplicate entry?"));
           } else {
@@ -2170,7 +2177,7 @@ public:
       drain_all();
 
       if (lost_bid) {
-        yield call(marker_tracker->flush(last_update));
+        yield call(marker_tracker->flush());
         return set_cr_error(-EBUSY);
       } else if (lost_lock) {
         return set_cr_error(-ECANCELED);

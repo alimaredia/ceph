@@ -698,11 +698,6 @@ void RGWOp_DATALog_List::execute(optional_yield y) {
 
   last_update = info.last_update;
   ldpp_dout(this, 1) << "ALI: RGWOp_DATALog_List last_update is: " << last_update << " marker: " << last_marker << dendl;
-  /*
- for (auto& entry : entries) {
-    ldpp_dout(this, 1) << "ALI: entry's log_timestamps is: " << entry.log_timestamp << " RGWOp_DATALog_List last_update is: " << last_update << dendl;
-  }
-  */
 }
 
 void RGWOp_DATALog_List::send_response() {
@@ -715,8 +710,8 @@ void RGWOp_DATALog_List::send_response() {
 
   s->formatter->open_object_section("log_entries");
   s->formatter->dump_string("marker", last_marker);
-  //s->formatter->dump_float("last_update", last_update);
-  encode_json("last_updated", last_update, s->formatter);
+  utime_t lu(last_update);
+  encode_json("last_update", lu, s->formatter);
   s->formatter->dump_bool("truncated", truncated);
   {
     s->formatter->open_array_section("entries");
