@@ -402,6 +402,9 @@ public:
         *pnext_marker = response.marker;
         *truncated = response.truncated;
         *last_update = response.last_update;
+        ldpp_dout(dpp, 0) << "ALI: last update from response is " << *last_update << " response.last_update is: " << response.last_update << " marker is: " << *pnext_marker << dendl;
+        *last_update = real_clock::now();
+        ldpp_dout(dpp, 0) << "ALI: last update after update is " << *last_update << dendl;
         return set_cr_done();
       }
     }
@@ -1133,10 +1136,15 @@ public:
     sync_marker.pos = index_pos;
     sync_marker.timestamp = timestamp;
     // TODO: figure out how to get dest-zone's name
-    auto delta = last_update - timestamp;
-    sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta);
-    //
-    //sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, last_update.time_since_epoch());
+    real_time temp;
+    if (last_update != temp) {
+      auto delta = last_update - timestamp;
+      ldpp_dout(sync_env->dpp, 1) << "ALI: timestamp is " << timestamp << " last_update is " << last_update << dendl;
+
+      sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta);
+      //
+      //sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, last_update.time_since_epoch());
+    }
 
     tn->log(20, SSTR("updating marker marker_oid=" << marker_oid << " marker=" << new_marker));
 
@@ -2162,7 +2170,7 @@ public:
       drain_all();
 
       if (lost_bid) {
-        yield call(marker_tracker->flush());
+        yield call(marker_tracker->flush(last_update));
         return set_cr_error(-EBUSY);
       } else if (lost_lock) {
         return set_cr_error(-ECANCELED);

@@ -415,7 +415,7 @@ public:
     return NULL;
   }
 
-  RGWCoroutine *flush() {
+  RGWCoroutine *flush(real_time last_update = {}) {
     if (finish_markers.empty()) {
       return NULL;
     }
@@ -436,7 +436,7 @@ public:
     --i;
     const T& high_marker = i->first;
     marker_entry& high_entry = i->second;
-    RGWCoroutine *cr = order(store_marker(high_marker, high_entry.pos, high_entry.timestamp, high_entry.timestamp));
+    RGWCoroutine *cr = order(store_marker(high_marker, high_entry.pos, high_entry.timestamp, last_update));
     finish_markers.erase(finish_markers.begin(), last);
     return cr;
   }
