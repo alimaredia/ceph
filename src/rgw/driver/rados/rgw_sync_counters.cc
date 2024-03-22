@@ -35,7 +35,7 @@ namespace sync_deltas {
 
 void add_rgw_sync_delta_counters(PerfCountersBuilder *lpcb) {
   lpcb->set_prio_default(PerfCountersBuilder::PRIO_USEFUL);
-  lpcb->add_time(l_rgw_datalog_sync_delta, "sync_delta", "Sync Delta between data log shard");
+  lpcb->add_time(l_rgw_datalog_sync_delta, "sync_delta", "Sync delta between data log shard in seconds");
 }
 
 SyncDeltaCountersManager::SyncDeltaCountersManager(const std::string& name, CephContext *cct)

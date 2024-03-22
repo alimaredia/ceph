@@ -1121,15 +1121,34 @@ class RGWDataSyncShardMarkerTrack : public RGWSyncShardMarkerTrack<string, strin
 
 public:
   RGWDataSyncShardMarkerTrack(RGWDataSyncCtx *_sc,
-                         const uint32_t shard_id,
                          const string& _marker_oid,
                          const rgw_data_sync_marker& _marker,
-                         RGWSyncTraceNodeRef& _tn, RGWObjVersionTracker& objv) : RGWSyncShardMarkerTrack(DATA_SYNC_UPDATE_MARKER_WINDOW),
+                         RGWSyncTraceNodeRef& _tn, 
+                         RGWObjVersionTracker& objv,
+                         const uint32_t shard_id) : RGWSyncShardMarkerTrack(DATA_SYNC_UPDATE_MARKER_WINDOW),
                                                                 sc(_sc), sync_env(_sc->env),
                                                                 marker_oid(_marker_oid),
                                                                 sync_marker(_marker),
                                                                 tn(_tn), objv(objv),
-                                                                sync_delta_counters_manager(ceph::perf_counters::key_create(rgw_sync_delta_counters_key, {{"source-zone", sync_env->svc->zone->get_zone_params().get_id()}, {"dest-zone", _sc->source_zone.id}, {"shard-id", std::to_string(shard_id)}}), _sc->env->cct) {}
+                                                                sync_delta_counters_manager(init_keys(shard_id), _sc->env->cct) {}
+
+  std::string init_keys(const uint32_t shard_id) {
+    std::string sz;
+    std::string sz_id = sc->source_zone.id;
+    RGWZone* source_zone = sc->env->svc->zone->find_zone(sc->source_zone);
+    if (source_zone) {
+      sz = source_zone->name;
+    }
+    std::string lz_id = sc->env->svc->zone->get_zone_params().get_id();
+    std::string lz = sc->env->svc->zone->zone_name();
+    //ldpp_dout(sync_env->dpp, 1) << "ALI: source-zone : " << sz << " source-zone-id: " << sz_id << " local-zone: " << lz << " local-zone-id: " << lz_id << dendl;
+    return ceph::perf_counters::key_create(rgw_sync_delta_counters_key, 
+        {{"local-zone", lz}, 
+        {"local-zone-id", lz_id}, 
+        {"source-zone", sz}, 
+        {"source-zone-id", sz_id}, 
+        {"shard-id", std::to_string(shard_id)}});
+  }
   // TODOs
   // helper function for sync_delta_counters_manager_initialization
   // zone service gets zone params - zone service will have period info which contains the zonegroups and zones which look up with a given id and find it's name
@@ -1838,7 +1857,7 @@ public:
     reenter(this) {
       tn->log(10, "start full sync");
       oid = full_data_sync_index_shard_oid(sc->source_zone, shard_id);
-      marker_tracker.emplace(sc, shard_id, status_oid, sync_marker, tn, objv);
+      marker_tracker.emplace(sc, status_oid, sync_marker, tn, objv, shard_id);
       total_entries = sync_marker.pos;
       entry_timestamp = sync_marker.timestamp; // time when full sync started
       do {
@@ -1998,7 +2017,7 @@ public:
   int operate(const DoutPrefixProvider *dpp) override {
     reenter(this) {
       tn->log(10, "start incremental sync");
-      marker_tracker.emplace(sc, shard_id, status_oid, sync_marker, tn, objv);
+      marker_tracker.emplace(sc, status_oid, sync_marker, tn, objv, shard_id);
       do {
         if (!lease_cr->is_locked()) {
           lost_lock = true;
