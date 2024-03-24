@@ -28,8 +28,6 @@ const std::string rgw_sync_delta_counters_key = "rgw_sync_delta";
 
 namespace sync_deltas {
 
-//std::string rgw_sync_delta_counters_key;
-
 enum {
   l_rgw_sync_delta_first = 806000,
 

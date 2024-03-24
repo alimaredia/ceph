@@ -404,7 +404,6 @@ public:
         *pnext_marker = response.marker;
         *truncated = response.truncated;
         *last_update = response.last_update;
-        ldpp_dout(dpp, 0) << "ALI: last update from response is " << *last_update << " response.last_update is: " << response.last_update << " marker is: " << *pnext_marker << dendl;
         return set_cr_done();
       }
     }
@@ -1133,43 +1132,22 @@ public:
                                                                 sync_delta_counters_manager(init_keys(shard_id), _sc->env->cct) {}
 
   std::string init_keys(const uint32_t shard_id) {
-    std::string sz;
     std::string sz_id = sc->source_zone.id;
-    RGWZone* source_zone = sc->env->svc->zone->find_zone(sc->source_zone);
-    if (source_zone) {
-      sz = source_zone->name;
-    }
     std::string lz_id = sc->env->svc->zone->get_zone_params().get_id();
-    std::string lz = sc->env->svc->zone->zone_name();
-    //ldpp_dout(sync_env->dpp, 1) << "ALI: source-zone : " << sz << " source-zone-id: " << sz_id << " local-zone: " << lz << " local-zone-id: " << lz_id << dendl;
     return ceph::perf_counters::key_create(rgw_sync_delta_counters_key, 
-        {{"local-zone", lz}, 
         {"local-zone-id", lz_id}, 
-        {"source-zone", sz}, 
         {"source-zone-id", sz_id}, 
         {"shard-id", std::to_string(shard_id)}});
   }
-  // TODOs
-  // helper function for sync_delta_counters_manager_initialization
-  // zone service gets zone params - zone service will have period info which contains the zonegroups and zones which look up with a given id and find it's name
-  // labels per source and dest zone, or accumulate all the source zones for a given destination zone
-  // labels aren't meant to be user readable values
-  // will dashboards be by zone?
-  // casey really wants zone id
 
   RGWCoroutine* store_marker(const string& new_marker, uint64_t index_pos, const real_time& timestamp, const real_time& last_update) override {
     sync_marker.marker = new_marker;
     sync_marker.pos = index_pos;
     sync_marker.timestamp = timestamp;
-    // TODO: figure out how to get dest-zone's name
     real_time temp;
     if (last_update != temp) {
       auto delta = last_update - timestamp;
-      ldpp_dout(sync_env->dpp, 1) << "ALI: timestamp is " << timestamp << " last_update is " << last_update << dendl;
-
       sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, delta);
-      //
-      //sync_delta_counters_manager.tset(sync_deltas::l_rgw_datalog_sync_delta, last_update.time_since_epoch());
     }
 
     tn->log(20, SSTR("updating marker marker_oid=" << marker_oid << " marker=" << new_marker));

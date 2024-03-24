@@ -697,7 +697,6 @@ void RGWOp_DATALog_List::execute(optional_yield y) {
     datalog_rados->get_info(this, shard_id, &info, y);
 
   last_update = info.last_update;
-  ldpp_dout(this, 1) << "ALI: RGWOp_DATALog_List last_update is: " << last_update << " marker: " << last_marker << dendl;
 }
 
 void RGWOp_DATALog_List::send_response() {
