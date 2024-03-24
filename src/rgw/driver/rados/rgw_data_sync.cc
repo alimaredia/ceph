@@ -1134,9 +1134,9 @@ public:
   std::string init_keys(const uint32_t shard_id) {
     std::string sz_id = sc->source_zone.id;
     std::string lz_id = sc->env->svc->zone->get_zone_params().get_id();
-    return ceph::perf_counters::key_create(rgw_sync_delta_counters_key, 
-        {"local-zone-id", lz_id}, 
-        {"source-zone-id", sz_id}, 
+    return ceph::perf_counters::key_create(rgw_sync_delta_counters_key,
+        {{"local-zone-id", lz_id},
+        {"source-zone-id", sz_id},
         {"shard-id", std::to_string(shard_id)}});
   }
 
