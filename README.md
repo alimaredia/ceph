@@ -65,7 +65,11 @@ Use a personal email and don't forget the password!
 
 ### Paste license into text box
 
-![image info](./screenshots/screenshot-13-maybe.png)
+The page should go from this:
+
+![image info](./screenshots/screenshot-13-2.png)
+
+To this:
 
 ![image info](./screenshots/screenshot-13.png)
 
@@ -77,14 +81,9 @@ Use a personal email and don't forget the password!
 
 ![image info](./screenshots/screenshot-15.png)
 
-### Use key in below python program
+### Use key in below python program called wb-run.py
 
 ```
-```
-
-### Run the following python program
-```
-$ cat wb-run.py
 import wandb
 
 WANDB_BASE_URL = "http://localhost:8080"
@@ -94,19 +93,15 @@ run = wandb.init(project="foo-project",group="foo-group",job_type='foo-job-type'
 run.finish()
 ```
 
+### Run the following python program
+
 ```
 python wb-run.py
 ```
 
-See run under My projects
+### See run under My projects
 
-![image info](./screenshots/screenshot-18.png)
+![image info](./screenshots/screenshot-16.png)
 
-### Screenshot 19
 
-![image info](./screenshots/screenshot-19.png)
-
-### Screenshot 20
-
-![image info](./screenshots/screenshot-20.png)
-
+### The End. You now are ready to integrate wandb into your code and see what you've done locally!
