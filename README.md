@@ -59,7 +59,7 @@ Use a personal email and don't forget the password!
 
 ![image info](./screenshots/screenshot-11.png)
 
-### Go back to localhost:8000, click on "Add license"
+### Go back to localhost:8080, click on "Add license"
 
 ![image info](./screenshots/screenshot-12.png)
 
@@ -77,7 +77,7 @@ To this:
 
 ![image info](./screenshots/screenshot-14.png)
 
-### Go back to localhost:8000, copy API key
+### Go back to localhost:8080, copy API key
 
 ![image info](./screenshots/screenshot-15.png)
 
