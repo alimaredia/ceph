@@ -15,79 +15,98 @@ pip install wandb
 wandb server start
 ```
 
-### Screenshot 1
-
 ![image info](./screenshots/screenshot-1.png)
 
-### Screenshot 2
+### Go to http://localhost:8080 in your browswer
 
 ![image info](./screenshots/screenshot-2.png)
 
-### Screenshot 3
+### Click "Login", create an account. 
+
+Use a personal email and don't forget the password!
 
 ![image info](./screenshots/screenshot-3.png)
 
-### Screenshot 4
+### Click on "Get a free license"
 
 ![image info](./screenshots/screenshot-4.png)
 
-### Screenshot 5
+### Click on "Get a free license"
 
 ![image info](./screenshots/screenshot-5.png)
 
-### Screenshot 6
+### Click on "Continue"
 
 ![image info](./screenshots/screenshot-6.png)
 
-### Screenshot 7
+### Click on "New Organization"
 
 ![image info](./screenshots/screenshot-7.png)
 
-### Screenshot 8
+### Add an Organization Name then click "Next"
 
 ![image info](./screenshots/screenshot-8.png)
 
-### Screenshot 9
+### Click "Generate License Key"
 
 ![image info](./screenshots/screenshot-9.png)
 
-### Screenshot 10
+### Click "Copy License"
 
 ![image info](./screenshots/screenshot-10.png)
 
-### Screenshot 11
+### Click "Copy"
 
 ![image info](./screenshots/screenshot-11.png)
 
-### Screenshot 12
+### Go back to localhost:8000, click on "Add license"
 
 ![image info](./screenshots/screenshot-12.png)
 
-### Screenshot 13-maybe
+### Paste license into text box
 
 ![image info](./screenshots/screenshot-13-maybe.png)
 
-### Screenshot 13
-
 ![image info](./screenshots/screenshot-13.png)
 
-### Screenshot 14
+### Click "Update settings"
 
 ![image info](./screenshots/screenshot-14.png)
 
-### Screenshot 15
+### Go back to localhost:8000, copy API key
 
 ![image info](./screenshots/screenshot-15.png)
 
-### Screenshot 16
+### Use key in below python program
 
-![image info](./screenshots/screenshot-16.png)
+```
+```
 
-### Screenshot 17
+### Run the following python program
+```
+$ cat wb-run.py
+import wandb
 
-![image info](./screenshots/screenshot-17.png)
+WANDB_BASE_URL = "http://localhost:8080"
+WANDB_API_KEY = "local-ca43659ee79c59fbf3b5f551218c659766038799"
+wandb.login(host=WANDB_BASE_URL, key=WANDB_API_KEY)
+run = wandb.init(project="foo-project",group="foo-group",job_type='foo-job-type')
+run.finish()
+```
 
-### Screenshot 18
+```
+python wb-run.py
+```
+
+See run under My projects
 
 ![image info](./screenshots/screenshot-18.png)
+
+### Screenshot 19
+
+![image info](./screenshots/screenshot-19.png)
+
+### Screenshot 20
+
+![image info](./screenshots/screenshot-20.png)
 
